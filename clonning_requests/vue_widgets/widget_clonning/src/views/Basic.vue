@@ -26,9 +26,9 @@ interface CardItem {
 }
 
 const solicitacaoId = ref("");
-const urlDestino = ref("");
-const userDestino = ref("");
-const passDestino = ref("");
+const urlSource = ref("");
+const userSource = ref("");
+const passSource = ref("");
 const type_pass = ref<boolean>(false);
 
 const ResponseTxt = ref<string>("");
@@ -42,10 +42,10 @@ const newCardName = ref<string>("");
 const handleGenerate = () => {
   var data: ClonningData = {
     solicitacao_id: Number(solicitacaoId.value),
-    url_origem: getUrlBase(),
-    url_destino: urlDestino.value,
-    user_destino: userDestino.value,
-    pass_destino: passDestino.value,
+    destination: getUrlBase(),
+    url_source: urlSource.value,
+    user_source: userSource.value,
+    pass_source: passSource.value,
   };
 
   // campos de validação
@@ -83,7 +83,7 @@ function removeCard(id: string) {
   arrayCards.value = arrayCards.value.filter((card) => card.props.id !== id);
 }
 
-watch([solicitacaoId, urlDestino], () => {
+watch([solicitacaoId, urlSource], () => {
   if (!validateNumeric(solicitacaoId.value)) {
     // se não for numero não deixa atualizar o valor
     solicitacaoId.value = solicitacaoId.value.replace(/\D/g, "");
@@ -163,7 +163,7 @@ watch([solicitacaoId, urlDestino], () => {
                   class="flex items-center gap-2 text-[#002D72] font-bold mb-4"
                 >
                   <MapPin class="w-4 h-4" />
-                  <span>Destino</span>
+                  <span>Servidor de origem da Solicitação</span>
                 </div>
 
                 <div>
@@ -177,9 +177,9 @@ watch([solicitacaoId, urlDestino], () => {
                     />
                     <input
                       required="true"
-                      v-model="urlDestino"
+                      v-model="urlSource"
                       type="text"
-                      placeholder="https://destino.com"
+                      placeholder="https://source.com"
                       class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
                     />
                   </div>
@@ -196,7 +196,7 @@ watch([solicitacaoId, urlDestino], () => {
                     />
                     <input
                       required="true"
-                      v-model="userDestino"
+                      v-model="userSource"
                       type="text"
                       placeholder="admin"
                       class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
@@ -215,7 +215,7 @@ watch([solicitacaoId, urlDestino], () => {
                     />
                     <input
                       required="true"
-                      v-model="passDestino"
+                      v-model="passSource"
                       placeholder="*********"
                       :type="type_pass ? 'text' : 'password'"
                       class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
