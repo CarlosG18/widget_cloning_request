@@ -24,26 +24,54 @@ export class ExternalService {
       method: "post",
       params: JSON.stringify({
         targetState: payload.targetState,
-        targetAssignee: payload.targetAssignee, // Usuário logado
+        targetAssignee: String(payload.targetAssignee),
         formFields: payload.form_fields,
-        comment: payload.comment,
+        comment: String(payload.comment),
       }),
       process: encryptedProcessId,
     };
 
+    console.log("body ->>", body);
+
     const response = await this.http.post(
       "/fluighub/rest/service/execute/movestart-process",
-      body,
+      JSON.stringify(body),
     );
 
     // Tratamento de resposta do FluigHub
-    const msg =
-      typeof response.data.message === "string"
-        ? JSON.parse(response.data.message)
-        : response.data.message;
+    let msg;
+    const rawMessage = response.data.message;
 
-    return msg.processInstanceId;
-  }
+    // 1. Verificamos se a mensagem existe
+    if (!rawMessage) {
+        throw new Error("O servidor não retornou nenhuma mensagem.");
+    }
+
+    // 2. Tentamos tratar a mensagem (que pode vir como String JSON ou Objeto)
+    if (typeof rawMessage === "string") {
+      try {
+        // Só tentamos o parse se a string parecer um objeto JSON
+        if (rawMessage.trim().startsWith("{")) {
+          msg = JSON.parse(rawMessage);
+        } else {
+          // Se for uma string de erro comum (texto puro), lançamos o erro direto
+          throw new Error(rawMessage);
+        }
+      } catch (e) {
+        // Se o parse falhar, o erro real está no texto da rawMessage
+        throw new Error(`Erro no Fluig: ${rawMessage}`);
+      }
+    } else {
+      msg = rawMessage;
+    }
+
+    // 3. Verificamos se temos o ID da solicitação
+    if (msg && msg.processInstanceId) {
+      return msg.processInstanceId;
+    }
+
+    throw new Error("Falha ao iniciar processo: ID não retornado.");
+ }
 
   private async crypt(processId: string) {
     const res = await this.http.post("/fluighub/rest/service/execute/crypto", {

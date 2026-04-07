@@ -19,7 +19,7 @@ export class FluigService {
   async getRequest(requestId: number) {
     const url = `/process-management/api/v2/requests/${requestId}`;
     const response = await this.http.get(url, {
-      params: { expand: ["formFields"] },
+      params: { expand: "formFields" },
     });
     return response.data;
   }
@@ -29,7 +29,7 @@ export class FluigService {
     const payload = {
       endpoint: "dataset",
       method: "get",
-      params: `datasetId=dsGetParams&constraintsField=processInstanceId&constraintsInitialValue=${solicitationId}&constraintsType=MUST`,
+      params: `datasetId=dsGetParams&constraintsField=processInstanceId&constraintsInitialValue=${solicitationId}&constraintsFinalValue=${solicitationId}&constraintsType=MUST`,
     };
     const response = await this.http.post(url, payload);
     return response.data;

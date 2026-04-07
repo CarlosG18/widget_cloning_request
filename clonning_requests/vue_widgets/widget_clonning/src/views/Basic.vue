@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { Link, User, Lock, Repeat, MapPin, Eye } from "lucide-vue-next";
+import { Link, User, Lock, Repeat, MapPin, Eye, EyeOff } from "lucide-vue-next";
 import { ClonningRequest } from "../services/basic/applicationBasic";
 import type { ClonningData } from "../services/basic/applicationBasic";
 import { validateNumeric } from "../utils/validators";
@@ -9,6 +9,7 @@ const solicitacaoId = ref("");
 const urlDestino = ref("");
 const userDestino = ref("");
 const passDestino = ref("");
+const type_pass = ref<boolean>(false);
 
 const ResponseTxt = ref<string>("");
 
@@ -22,8 +23,6 @@ const handleGenerate = () => {
     user_destino: userDestino.value,
     pass_destino: passDestino.value,
   };
-
-  console.log("Payload:", data);
 
   ClonningRequest(data)
     .then((response) => {
@@ -50,7 +49,7 @@ watch([solicitacaoId, urlDestino], () => {
 
 <template>
   <div
-    class="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 font-sans"
+    class="bg-[#F8FAFC] flex flex-col items-center justify-center p-6 font-sans"
   >
     <div class="text-center mb-8">
       <h1 class="text-3xl font-bold text-[#002D72] mb-2">Clonning Request</h1>
@@ -132,15 +131,17 @@ watch([solicitacaoId, urlDestino], () => {
               <input
                 required="true"
                 v-model="passDestino"
-                type="password"
-                placeholder="••••••••"
+                placeholder="*********"
+                :type="type_pass ? 'text' : 'password'"
                 class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
               />
               <!-- visualização do pass -->
               <div
+                @click="type_pass = !type_pass"
                 class="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
               >
-                <Eye class="w-4 h-4" />
+                <EyeOff v-if="type_pass" class="w-4 h-4" />
+                <Eye v-else class="w-4 h-4" />
               </div>
             </div>
           </div>
@@ -168,6 +169,7 @@ watch([solicitacaoId, urlDestino], () => {
             class="w-full p-5 bg-[#F0F5FF] rounded-2xl border border-blue-100 font-mono text-sm text-[#3E5C9A] break-all pr-16 leading-relaxed"
           >
             {{ ResponseTxt }}
+            <!-- apresentar mais detalhes do retorno -->
           </div>
         </div>
       </div>

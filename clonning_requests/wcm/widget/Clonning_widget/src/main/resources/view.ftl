@@ -8,6 +8,7 @@
 		crossorigin
 		src="/Clonning_widget/resources/js/app-vue/index.js"
 	></script>
+	<script type="text/javascript" src="/webdesk/vcXMLRPC.js"></script>
 	<link
 		rel="stylesheet"
 		crossorigin
