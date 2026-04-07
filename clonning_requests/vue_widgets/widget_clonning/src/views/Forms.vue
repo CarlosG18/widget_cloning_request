@@ -35,12 +35,9 @@ const handleGenerate = () => {
     },
   };
 
-  console.log("Payload:", data);
-
   ClonningRequest(data)
     .then((response) => {
       Response.value = true;
-      console.log(response);
       ResponseTxt.value = JSON.stringify(response, null, 2);
     })
     .catch((error) => {

@@ -9,21 +9,17 @@ export interface ClonningData {
   pass_destino: string;
 }
 
-export async function ClonningRequest(data: ClonningData) {
+export async function ClonningRequest(data: ClonningData, fields: string[]) {
   try {
     const origem = new FluigService(data.url_origem);
     const fluigData = await origem.getRequest(data.solicitacao_id);
     const fluigParams = await origem.getParameters(String(data.solicitacao_id));
 
-    console.log("fluigParams ->>", fluigParams);
-    console.log("fluigData ->>", fluigData);
-
     // 2. Extrai Target State do dataset (conforme sua lógica anterior)
     const msgJson = JSON.parse(fluigParams.message || "{}");
     const targetState = msgJson?.values?.[0]?.targetState;
 
-    const formFields = formatFormFields(fluigData.formFields);
-    console.log("formFields ->>", formFields);
+    var formFields = formatFormFields(fluigData.formFields, fields);
 
     // obtendo o targetAssignee do dataset
     const targetAssignee = msgJson?.values?.[0]?.targetAssignee;
@@ -39,8 +35,6 @@ export async function ClonningRequest(data: ClonningData) {
       comment: "Replicado via Basic Auth",
       process: fluigData.processId,
     };
-
-    console.log("Payload preparado ->>", payload);
 
     // 4. Instancia Destino (Usuário Logado)
     const destino = new ExternalService(
@@ -58,15 +52,24 @@ export async function ClonningRequest(data: ClonningData) {
   }
 }
 
-function formatFormFields(formFields: any): Record<string, string> {
+function formatFormFields(
+  formFields: any,
+  fields: string[],
+): Record<string, string> {
   const formatted: Record<string, string> = {};
+  const timestamp = new Date().getTime();
 
-  // Object.values garante a iteração quer receba um Array ou um Objeto indexado
   Object.values(formFields).forEach((item: any) => {
     if (item && typeof item === "object" && "field" in item) {
-      formatted[item.field] = item.value || "";
+      let value = item.value || "";
+
+      // Aplica o sufixo apenas nos campos que costumam ter validação de duplicidade
+
+      if (fields.includes(item.field)) {
+        value = `${value} (Clone ${timestamp})`;
+      }
+      formatted[item.field] = value;
     }
   });
-
   return formatted;
 }

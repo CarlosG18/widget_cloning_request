@@ -31,47 +31,36 @@ export class ExternalService {
       process: encryptedProcessId,
     };
 
-    console.log("body ->>", body);
+    try {
+      const response = await this.http.post(
+        "/fluighub/rest/service/execute/movestart-process",
+        JSON.stringify(body),
+      );
 
-    const response = await this.http.post(
-      "/fluighub/rest/service/execute/movestart-process",
-      JSON.stringify(body),
-    );
+      // Se chegar aqui, é sucesso (200 OK)
+      const rawMessage = response.data.message;
+      const msg =
+        typeof rawMessage === "string" ? JSON.parse(rawMessage) : rawMessage;
 
-    // Tratamento de resposta do FluigHub
-    let msg;
-    const rawMessage = response.data.message;
-
-    // 1. Verificamos se a mensagem existe
-    if (!rawMessage) {
-        throw new Error("O servidor não retornou nenhuma mensagem.");
-    }
-
-    // 2. Tentamos tratar a mensagem (que pode vir como String JSON ou Objeto)
-    if (typeof rawMessage === "string") {
-      try {
-        // Só tentamos o parse se a string parecer um objeto JSON
-        if (rawMessage.trim().startsWith("{")) {
-          msg = JSON.parse(rawMessage);
-        } else {
-          // Se for uma string de erro comum (texto puro), lançamos o erro direto
-          throw new Error(rawMessage);
-        }
-      } catch (e) {
-        // Se o parse falhar, o erro real está no texto da rawMessage
-        throw new Error(`Erro no Fluig: ${rawMessage}`);
-      }
-    } else {
-      msg = rawMessage;
-    }
-
-    // 3. Verificamos se temos o ID da solicitação
-    if (msg && msg.processInstanceId) {
       return msg.processInstanceId;
-    }
+    } catch (error: any) {
+      // Aqui capturamos o erro 500 e extraímos a mensagem do FluigHub
+      if (error.response && error.response.data) {
+        const serverMessage = error.response.data.message;
 
-    throw new Error("Falha ao iniciar processo: ID não retornado.");
- }
+        // Remove tags HTML da mensagem (como o <ul> e <li> do log) para exibir no widget
+        const cleanMessage =
+          typeof serverMessage === "string"
+            ? serverMessage.replace(/<[^>]*>?/gm, "")
+            : JSON.stringify(serverMessage);
+
+        console.error("Erro do FluigHub capturado:", cleanMessage);
+        throw new Error(cleanMessage);
+      }
+
+      throw new Error(error.message || "Erro desconhecido ao iniciar processo");
+    }
+  }
 
   private async crypt(processId: string) {
     const res = await this.http.post("/fluighub/rest/service/execute/crypto", {
