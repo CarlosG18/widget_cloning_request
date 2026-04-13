@@ -19,7 +19,12 @@ export async function ClonningRequest(data: ClonningData, fields: string[]) {
     );
 
     const fluigData = await source.getRequest(data.solicitacao_id);
-    const fluigParams = await source.getParameters(String(data.solicitacao_id));
+    const fluigParams = await source.getParameters(
+      String(data.solicitacao_id),
+      data.url_source,
+    );
+
+    console.log(fluigParams);
 
     // 2. Extrai Target State do dataset (conforme sua lógica anterior)
     const msgJson = JSON.parse(fluigParams.message || "{}");

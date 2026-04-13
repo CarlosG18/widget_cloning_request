@@ -13,6 +13,19 @@
 			"confirmExporting": false,
 			"hasBrowser": false,
 			"companyId": 1
+		},
+		{
+			"id": "eb5vgx7864amnqa6hvj9t4m7zbhei",
+			"name": "Sebrae",
+			"host": "fluighml.rn.sebrae.com.br",
+			"ssl": true,
+			"port": 443,
+			"username": "carlos.silva",
+			"password": "eyJpdiI6ImI5NzhkODJiNDMxMjU4ZWVmMTAyZWQ5NWU5MzZiYWUwIiwic2FsdCI6ImMxNzY5ZjVjNjY1MGU0MmMyNTcyM2ExNmE3YTczM2VmIiwidGV4dCI6ImNlN2IwODE3ZWNmYWIxNTUxNmRjYTI1MTk1ODUzZjFjIn0=",
+			"userCode": "carlos.silva",
+			"confirmExporting": false,
+			"hasBrowser": false,
+			"companyId": 1
 		}
 	]
 }

@@ -39,6 +39,8 @@ const activeTab = ref("clone"); // Aba padrão
 const arrayCards = ref<CardItem[]>([]);
 const newCardName = ref<string>("");
 
+const isLoading = ref<boolean>(false);
+
 const handleGenerate = () => {
   var data: ClonningData = {
     solicitacao_id: Number(solicitacaoId.value),
@@ -233,6 +235,7 @@ watch([solicitacaoId, urlSource], () => {
               </div>
 
               <button
+                :disabled="isLoading"
                 type="submit"
                 class="w-full bg-[#003087] hover:bg-[#00266b] text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 transition-all active:scale-[0.99] mt-8"
               >
