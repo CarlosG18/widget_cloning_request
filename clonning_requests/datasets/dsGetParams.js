@@ -15,14 +15,7 @@ function createDataset(fields, constraints, sorts) {
   dataset.addColumn("targetAssignee");
   dataset.addColumn("formsFields");
 
-  var targetState = "não encontrado";
-  var targetAssignee = "não encontrado";
-
   var processInstanceId = "";
-
-  if (processInstanceId == "") {
-        return dataset;
-    }
 
   for (var i = 0; i < constraints.length; i++) {
     if (constraints[i].fieldName == "processInstanceId") {
@@ -30,28 +23,35 @@ function createDataset(fields, constraints, sorts) {
     }
   }
 
+  if (!processInstanceId || processInstanceId == "") {
+    return dataset;
+  }
+
   try {
     var formFields = getFormsFields(processInstanceId);
-    var formFieldsStr = JSON.stringify(formFields);
-    
+    var formFieldsStr = JSON.stringify(formFields || []);
+
+    var targetState = "não encontrado";
+    var targetAssignee = "não encontrado";
+
     var c1 = DatasetFactory.createConstraint(
       "processHistoryPK.processInstanceId",
       processInstanceId,
       processInstanceId,
-      ConstraintType.MUST
+      ConstraintType.MUST,
     );
     var c2 = DatasetFactory.createConstraint(
       "active",
       "true",
       "true",
-      ConstraintType.MUST
+      ConstraintType.MUST,
     );
 
     var dataset_processHistory = DatasetFactory.getDataset(
       "processHistory",
       null,
       [c1, c2],
-      null
+      null,
     );
 
     if (
@@ -65,14 +65,14 @@ function createDataset(fields, constraints, sorts) {
       "choosedSequence",
       targetState,
       targetState,
-      ConstraintType.MUST
+      ConstraintType.MUST,
     );
 
     var c4 = DatasetFactory.createConstraint(
       "processTaskPK.processInstanceId",
       processInstanceId,
       processInstanceId,
-      ConstraintType.MUST
+      ConstraintType.MUST,
     );
 
     var constraint = new Array(c3, c4);
@@ -81,56 +81,62 @@ function createDataset(fields, constraints, sorts) {
       "processTask",
       null,
       constraint,
-      null
+      null,
     );
 
     if (dataset_processTask != null && dataset_processTask.getRowsCount() > 0) {
       targetAssignee = dataset_processTask.getValue(0, "choosedColleagueId");
     }
 
-    dataset.addRow([processInstanceId, targetState, targetAssignee, formFieldsStr]);
+    dataset.addRow([
+      processInstanceId,
+      targetState,
+      targetAssignee,
+      formFieldsStr,
+    ]);
 
     return dataset;
-
   } catch (e) {
-    log.error(">>> Erro em createDataset: " + e);
-    throw "Falha ao criar o dataset: " + e;
+    log.error(
+      ">>> Erro no Dataset dsGetParams (ID: " + processInstanceId + "): " + e,
+    );
+    dataset.addRow([processInstanceId, "Erro", e.toString(), "[]"]);
   }
 }
 
 function getFormsFields(processInstanceId) {
-    var endpoint = "/process-management/api/v2/requests/" + processInstanceId + "?expand=formFields";
-    var clientService = fluigAPI.getAuthorizeClientService();
+  if (isNaN(processInstanceId)) throw "ID de solicitação inválido";
 
-    var data = {
-        companyId: getValue("WKCompany") + "",
-        serviceCode: "Fluig API", 
-        endpoint: endpoint,
-        method: "get",
-        timeoutService: "100",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    };
+  var endpoint =
+    "/process-management/api/v2/requests/" +
+    processInstanceId +
+    "?expand=formFields";
+  var clientService = fluigAPI.getAuthorizeClientService();
 
-    try {
-        var response = clientService.invoke(JSON.stringify(data));
-        var resultStr = response.getResult();
+  var data = {
+    companyId: getValue("WKCompany") + "",
+    serviceCode: "Fluig API",
+    endpoint: endpoint,
+    method: "get",
+    timeoutService: "100",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
 
-        if (resultStr == null || resultStr.isEmpty()) {
-            throw "A resposta da API está vazia ou o serviço não está disponível.";
-        }
+  try {
+    var response = clientService.invoke(JSON.stringify(data));
+    var resultStr = response.getResult();
 
-        var result = JSON.parse(resultStr);
+    if (!resultStr || resultStr.isEmpty()) throw "Resposta vazia da API";
 
-        if (result.message && result.detailedMessage) {
-            throw "Erro na API Fluig: " + result.message;
-        }
+    var result = JSON.parse(resultStr);
 
-        return result.formFields;
+    if (result.message) throw result.message;
 
-    } catch (e) {
-        log.error(">>> Erro em getFormsFields: " + e);
-        throw "Falha ao obter campos do formulário: " + e;
-    }
+    return result.formFields || [];
+  } catch (e) {
+    log.error(">>> Erro em getFormsFields: " + e);
+    return [];
+  }
 }

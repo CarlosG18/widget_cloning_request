@@ -1,43 +1,17 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import {
-  Link,
-  User,
-  Lock,
-  Repeat,
-  MapPin,
-  Eye,
-  EyeOff,
-  LayoutGrid,
-  Plus,
-  Settings,
-} from "lucide-vue-next";
-import { ClonningRequest } from "../services/basic/applicationBasic";
-import type { ClonningData } from "../services/basic/applicationBasic";
+import { Link, User, Lock, Repeat, MapPin } from "lucide-vue-next";
+import { ClonningRequest } from "../services/fluigService";
+import type { ClonningData } from "../types/clonning";
 import { validateNumeric } from "../utils/validators";
-import Card from "../components/card.vue";
-
-interface CardItem {
-  component: any;
-  props: {
-    name: string;
-    id: string; // Ex: ID da solicitação conforme o log
-  };
-}
 
 const solicitacaoId = ref("");
 const urlSource = ref("");
 const userSource = ref("");
 const passSource = ref("");
-const type_pass = ref<boolean>(false);
 
 const ResponseTxt = ref<string>("");
 const Response = ref<boolean>(false);
-
-const activeTab = ref("clone"); // Aba padrão
-
-const arrayCards = ref<CardItem[]>([]);
-const newCardName = ref<string>("");
 
 const isLoading = ref<boolean>(false);
 
@@ -46,17 +20,11 @@ const handleGenerate = () => {
     solicitacao_id: Number(solicitacaoId.value),
     destination: getUrlBase(),
     url_source: urlSource.value,
-    user_source: userSource.value,
-    pass_source: passSource.value,
+    consumer_key: userSource.value,
+    consumer_secret: passSource.value,
   };
 
-  // campos de validação
-  var fields: any = [];
-  arrayCards.value.forEach((card) => {
-    fields.push(card.props.name);
-  });
-
-  ClonningRequest(data, fields)
+  ClonningRequest(data)
     .then((response) => {
       Response.value = true;
       ResponseTxt.value = JSON.stringify(response, null, 2);
@@ -69,20 +37,6 @@ const handleGenerate = () => {
 
 function getUrlBase() {
   return window.location.origin;
-}
-
-function addCard(name: string) {
-  arrayCards.value.push({
-    component: Card,
-    props: {
-      name: name,
-      id: `request_${Date.now()}`, // Exemplo de ID dinâmico
-    },
-  });
-}
-
-function removeCard(id: string) {
-  arrayCards.value = arrayCards.value.filter((card) => card.props.id !== id);
 }
 
 watch([solicitacaoId, urlSource], () => {
@@ -108,43 +62,12 @@ watch([solicitacaoId, urlSource], () => {
     <div
       class="w-full max-w-2xl bg-white rounded-[32px] shadow-2xl p-1 shadow-slate-200/60 border border-slate-100"
     >
-      <!-- abas -->
-      <div
-        class="flex p-2 gap-2 bg-slate-50 rounded-t-[32px] border-b border-slate-100"
-      >
-        <button
-          @click="activeTab = 'clone'"
-          :class="[
-            activeTab === 'clone'
-              ? 'bg-white shadow-sm text-[#003087]'
-              : 'text-slate-400 hover:text-slate-600',
-          ]"
-          class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all"
-        >
-          <LayoutGrid class="w-4 h-4" />
-          Clonar
-        </button>
-        <button
-          @click="activeTab = 'config'"
-          :class="[
-            activeTab === 'config'
-              ? 'bg-white shadow-sm text-[#003087]'
-              : 'text-slate-400 hover:text-slate-600',
-          ]"
-          class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all"
-        >
-          <Settings class="w-4 h-4" />
-          Configurações
-        </button>
-      </div>
       <div class="p-10">
-        <!-- aba de clonagem -->
-        <div
-          v-if="activeTab === 'clone'"
-          class="space-y-8 animate-in fade-in duration-500"
-        >
+        <div class="space-y-8 animate-in fade-in duration-500">
           <div class="shadow-slate-200/60">
+            <!-- formulario de clonagem -->
             <form @submit.prevent="handleGenerate" class="space-y-6">
+              <!-- campo de solicitação id -->
               <div class="w-full">
                 <label
                   class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
@@ -165,9 +88,10 @@ watch([solicitacaoId, urlSource], () => {
                   class="flex items-center gap-2 text-[#002D72] font-bold mb-4"
                 >
                   <MapPin class="w-4 h-4" />
-                  <span>Servidor de origem da Solicitação</span>
+                  <span>Servidor de Produção da Solicitação</span>
                 </div>
 
+                <!-- campo de url de destino -->
                 <div>
                   <label
                     class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
@@ -187,10 +111,10 @@ watch([solicitacaoId, urlSource], () => {
                   </div>
                 </div>
 
-                <div>
+                <!-- <div>
                   <label
                     class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
-                    >Usuário</label
+                    >Consumer Key</label
                   >
                   <div class="relative">
                     <User
@@ -204,12 +128,12 @@ watch([solicitacaoId, urlSource], () => {
                       class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
                     />
                   </div>
-                </div>
+                </div> -->
 
-                <div>
+                <!-- <div>
                   <label
                     class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
-                    >Senha</label
+                    >Consumer Secret</label
                   >
                   <div class="relative">
                     <Lock
@@ -217,21 +141,13 @@ watch([solicitacaoId, urlSource], () => {
                     />
                     <input
                       required="true"
+                      type="text"
+                      placeholder="********"
                       v-model="passSource"
-                      placeholder="*********"
-                      :type="type_pass ? 'text' : 'password'"
                       class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
                     />
-                    <!-- visualização do pass -->
-                    <div
-                      @click="type_pass = !type_pass"
-                      class="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
-                    >
-                      <EyeOff v-if="type_pass" class="w-4 h-4" />
-                      <Eye v-else class="w-4 h-4" />
-                    </div>
                   </div>
-                </div>
+                </div> -->
               </div>
 
               <button
@@ -260,45 +176,6 @@ watch([solicitacaoId, urlSource], () => {
                   <!-- apresentar mais detalhes do retorno -->
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- aba de config -->
-        <div
-          v-if="activeTab === 'config'"
-          class="space-y-8 animate-in fade-in duration-500"
-        >
-          <div class="text-center">
-            <h2 class="text-lg font-bold text-[#002D72]">Adicionar campos</h2>
-            <p class="text-slate-500 text-sm mt-1">
-              Gerencie dinamicamente os campos que possuem valores únicos para
-              evitar registros duplicados.
-            </p>
-          </div>
-
-          <div class="flex gap-3">
-            <input
-              v-model="newCardName"
-              type="text"
-              placeholder="Nome do Campo (ex: ID da Solicitação)"
-              class="flex-1 px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 transition-all text-sm"
-            />
-            <button
-              class="bg-[#002D72] hover:bg-[#001D4A] text-white px-6 py-3.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all"
-              @click="addCard(newCardName)"
-            >
-              <Plus class="w-4 h-4" /> Adicionar
-            </button>
-          </div>
-
-          <div class="space-y-4">
-            <div v-for="card in arrayCards" :key="card.props.id">
-              <Card
-                :name="card.props.name"
-                :id="card.props.id"
-                @remove="removeCard"
-              />
             </div>
           </div>
         </div>

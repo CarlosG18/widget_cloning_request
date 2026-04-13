@@ -1,6 +1,5 @@
 import { FluigService } from "./fluigBasic";
 import { ExternalService } from "./externalServiceBasic";
-
 export interface ClonningData {
   solicitacao_id: number;
   destination: string;
