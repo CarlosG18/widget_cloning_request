@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { Link, User, Lock, Repeat, MapPin } from "lucide-vue-next";
+import { Link, Repeat, MapPin } from "lucide-vue-next";
 import { ClonningRequest } from "../services/fluigService";
 import type { ClonningData } from "../types/clonning";
 import { validateNumeric } from "../utils/validators";
@@ -160,6 +160,7 @@ watch([solicitacaoId, urlSource], () => {
               </button>
             </form>
 
+            <!-- resposta gerada -->
             <div
               v-if="Response"
               class="mt-10 pt-10 border-t border-slate-50 space-y-4"
@@ -173,7 +174,6 @@ watch([solicitacaoId, urlSource], () => {
                   class="w-full p-5 bg-[#F0F5FF] rounded-2xl border border-blue-100 font-mono text-sm text-[#3E5C9A] break-all pr-16 leading-relaxed"
                 >
                   {{ ResponseTxt }}
-                  <!-- apresentar mais detalhes do retorno -->
                 </div>
               </div>
             </div>
