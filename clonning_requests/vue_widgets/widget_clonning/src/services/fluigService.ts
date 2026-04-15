@@ -3,15 +3,16 @@ import OAuth from "oauth-1.0a";
 import CryptoJS from "crypto-js";
 
 export async function ClonningRequest(data: ClonningData) {
+  const retorno: Response = {
+    success: false,
+    newId: "",
+    processId: "",
+    date: "",
+    error: "",
+  };
+
   try {
     const urlbase = data.destination;
-    const retorno: Response = {
-      success: false,
-      newId: "",
-      processId: "",
-      date: "",
-      error: "",
-    };
 
     // realizar a solicitação para o endpoint do fluig de produção
     const resDataset = await getdatasetAuth(
@@ -27,8 +28,6 @@ export async function ClonningRequest(data: ClonningData) {
       ],
     );
 
-    console.log("resDataset: ", resDataset);
-
     // criando os parametros para a função de start process
     const params: Params = {
       processID: resDataset.processID,
@@ -37,16 +36,11 @@ export async function ClonningRequest(data: ClonningData) {
       formFields: resDataset.formFields,
     };
 
-    console.log("params.processID: ", params.processID);
-    console.log("data.destination: ", data.destination);
-
     // realizar o encrypto do id_processo
     const encryptedProcessId = await encriptar(
       params.processID,
       data.destination,
     );
-
-    console.log();
 
     // realizar o start process no endpoint do fluig de homologação
     const newId = await initProcess(
@@ -57,15 +51,19 @@ export async function ClonningRequest(data: ClonningData) {
       encryptedProcessId,
     );
 
-    retorno.success = true;
+    // data
+    const dataAtual = new Date();
+
     retorno.newId = newId;
-    retorno.processId = encryptedProcessId;
-    retorno.date = new Date().toISOString();
+    retorno.processId = params.processID;
+    retorno.date = dataAtual.toISOString();
 
     return retorno;
   } catch (e: any) {
-    console.error(e);
-    throw new Error("Falha na clonagem: " + e.message);
+    console.error("erro ->>>>>>>>>>>>>>>>>>>>>", e);
+    retorno.success = false;
+    retorno.error = e.message;
+    return retorno;
   }
 }
 

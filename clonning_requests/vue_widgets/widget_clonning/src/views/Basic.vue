@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from "vue";
-import { Link, Repeat, MapPin } from "lucide-vue-next";
+import { Link, Repeat, MapPin, FileInput, Workflow } from "lucide-vue-next";
 import { ClonningRequest } from "../services/fluigService";
 import type { ClonningData, Response } from "../types/clonning";
 import { validateNumeric } from "../utils/validators";
@@ -10,7 +10,10 @@ const urlSource = ref("");
 //const userSource = ref("");
 //const passSource = ref("");
 
-const isRes = ref<boolean>(false);
+const activeTab = ref("solicitacao"); // Aba padrão
+
+const isResSolicitacao = ref<boolean>(false);
+const isResFormsInt = ref<boolean>(false);
 const res = reactive<Response>({
   success: false,
   newId: "",
@@ -18,6 +21,8 @@ const res = reactive<Response>({
   date: "",
   error: "",
 });
+
+const isURLValid = ref<boolean>(true);
 
 const isLoading = ref<boolean>(false);
 
@@ -30,22 +35,44 @@ const handleGenerate = () => {
     //consumer_secret: passSource.value,
   };
 
+  isURLValid.value = validateURL(urlSource.value);
+  if (!isURLValid.value) return;
+
   ClonningRequest(data)
     .then((response) => {
       res.success = response.success;
       res.newId = response.newId;
       res.processId = response.processId;
       res.date = response.date;
-      isRes.value = true;
+      isResSolicitacao.value = true;
     })
     .catch((error) => {
       res.error = error.message;
-      isRes.value = false;
+      isResSolicitacao.value = false;
     });
 };
 
 function getUrlBase() {
   return window.location.origin;
+}
+
+function validateURL(url: string) {
+  if (url === "") {
+    isURLValid.value = true;
+    return true;
+  }
+
+  const pattern = new RegExp(
+    "^(https?:\\/\\/)?" + // protocol
+      "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" +
+      "((\\d{1,3}\\.){3}\\d{1,3}))" +
+      "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" +
+      "(\\?[;&a-z\\d%_.~+=-]*)?" +
+      "(\\#[-a-z\\d_]*)?$",
+    "i",
+  );
+
+  return !!pattern.test(url);
 }
 
 watch([solicitacaoId, urlSource], () => {
@@ -71,168 +98,308 @@ watch([solicitacaoId, urlSource], () => {
     <div
       class="w-full max-w-2xl bg-white rounded-[32px] shadow-2xl p-1 shadow-slate-200/60 border border-slate-100"
     >
-      <div class="p-10">
-        <div class="space-y-8 animate-in fade-in duration-500">
-          <div class="shadow-slate-200/60">
-            <!-- formulario de clonagem -->
-            <form @submit.prevent="handleGenerate" class="space-y-6">
-              <!-- campo de solicitação id -->
-              <div class="w-full">
-                <label
-                  class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
-                >
-                  Solicitação ID
-                </label>
-                <input
-                  required="true"
-                  v-model="solicitacaoId"
-                  type="text"
-                  placeholder="Ex: 2941"
-                  class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
-                />
-              </div>
+      <!-- abas -->
+      <div
+        class="flex p-2 gap-2 bg-slate-50 rounded-t-[32px] border-b border-slate-100"
+      >
+        <button
+          @click="activeTab = 'solicitacao'"
+          :class="[
+            activeTab === 'solicitacao'
+              ? 'bg-white shadow-sm text-[#003087]'
+              : 'text-slate-400 hover:text-slate-600',
+          ]"
+          class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all"
+        >
+          <Workflow class="w-4 h-4" />
+          Solicitação
+        </button>
+        <button
+          @click="activeTab = 'formsInt'"
+          :class="[
+            activeTab === 'formsInt'
+              ? 'bg-white shadow-sm text-[#003087]'
+              : 'text-slate-400 hover:text-slate-600',
+          ]"
+          class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all"
+        >
+          <FileInput class="w-4 h-4" />
+          Forms Interno
+        </button>
+      </div>
 
-              <div class="space-y-4">
-                <div
-                  class="flex items-center gap-2 text-[#002D72] font-bold mb-4"
-                >
-                  <MapPin class="w-4 h-4" />
-                  <span>Servidor de Produção da Solicitação</span>
+      <!-- conteúdo solicitação -->
+      <div
+        v-if="activeTab === 'solicitacao'"
+        class="space-y-8 animate-in fade-in duration-500"
+      >
+        <div class="p-10">
+          <div class="space-y-8 animate-in fade-in duration-500">
+            <div class="shadow-slate-200/60">
+              <!-- formulario de clonagem -->
+              <form @submit.prevent="handleGenerate" class="space-y-6">
+                <!-- campo de solicitação id -->
+                <div class="w-full">
+                  <label
+                    class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
+                  >
+                    Solicitação ID
+                  </label>
+                  <input
+                    required="true"
+                    v-model="solicitacaoId"
+                    type="text"
+                    placeholder="Ex: 2941"
+                    class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
+                  />
                 </div>
 
-                <!-- campo de url de destino -->
-                <div>
-                  <label
-                    class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
-                    >URL</label
+                <div class="space-y-4">
+                  <div
+                    class="flex items-center gap-2 text-[#002D72] font-bold mb-4"
                   >
-                  <div class="relative">
-                    <Link
-                      class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                    <input
-                      required="true"
-                      v-model="urlSource"
-                      type="text"
-                      placeholder="https://source.com"
-                      class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
-                    />
+                    <MapPin class="w-4 h-4" />
+                    <span>Servidor de Produção da Solicitação</span>
+                  </div>
+
+                  <!-- campo de url de destino -->
+                  <div>
+                    <label
+                      class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
+                      >URL</label
+                    >
+                    <div class="relative">
+                      <Link
+                        class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
+                      <input
+                        :input="validateURL(urlSource)"
+                        required="true"
+                        v-model="urlSource"
+                        type="text"
+                        placeholder="https://source.com"
+                        :class="
+                          isURLValid ? 'border-slate-200' : 'border-red-500'
+                        "
+                        class="w-full pl-12 pr-5 py-3.5 bg-white border rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
+                      />
+                    </div>
+                    <div v-if="!isURLValid">
+                      <p class="text-sm mt-2 text-red-700">
+                        URL inválida ou inacessível
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <!-- <div>
-                  <label
-                    class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
-                    >Consumer Key</label
-                  >
-                  <div class="relative">
-                    <User
-                      class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                    <input
-                      required="true"
-                      v-model="userSource"
-                      type="text"
-                      placeholder="admin"
-                      class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
-                    />
-                  </div>
-                </div> -->
+                <button
+                  :disabled="isLoading"
+                  type="submit"
+                  class="w-full bg-[#003087] hover:bg-[#00266b] text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 transition-all active:scale-[0.99] mt-8"
+                >
+                  <Repeat class="w-4 h-4 text-slate-400" />
+                  clonar solicitação
+                </button>
+              </form>
 
-                <!-- <div>
-                  <label
-                    class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
-                    >Consumer Secret</label
-                  >
-                  <div class="relative">
-                    <Lock
-                      class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                    <input
-                      required="true"
-                      type="text"
-                      placeholder="********"
-                      v-model="passSource"
-                      class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
-                    />
-                  </div>
-                </div> -->
-              </div>
-
-              <button
-                :disabled="isLoading"
-                type="submit"
-                class="w-full bg-[#003087] hover:bg-[#00266b] text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 transition-all active:scale-[0.99] mt-8"
+              <!-- Feedback -->
+              <div
+                v-if="isResSolicitacao"
+                class="mt-4 p-4 rounded-2xl shadow bg-white border"
               >
-                <Repeat class="w-4 h-4 text-slate-400" />
-                clonar solicitação
-              </button>
-            </form>
+                <div class="flex items-center gap-3 mb-4">
+                  <div
+                    class="w-10 h-10 flex items-center justify-center rounded-full"
+                    :class="res.success ? 'bg-green-100' : 'bg-red-100'"
+                  >
+                    <span
+                      class="text-xl"
+                      :class="res.success ? 'text-green-600' : 'text-red-600'"
+                    >
+                      {{ res.success ? "✔" : "✖" }}
+                    </span>
+                  </div>
 
-            <!-- Feedback -->
-            <div
-              v-if="isRes"
-              class="mt-4 p-4 rounded-2xl shadow bg-white border"
-            >
-              <div class="flex items-center gap-3 mb-4">
-                <div
-                  class="w-10 h-10 flex items-center justify-center rounded-full"
-                  :class="res.success ? 'bg-green-100' : 'bg-red-100'"
-                >
-                  <span
-                    class="text-xl"
+                  <p
+                    class="text-lg font-semibold"
                     :class="res.success ? 'text-green-600' : 'text-red-600'"
                   >
-                    {{ res.success ? "✔" : "✖" }}
-                  </span>
-                </div>
-
-                <p
-                  class="text-lg font-semibold"
-                  :class="res.success ? 'text-green-600' : 'text-red-600'"
-                >
-                  {{
-                    res.success
-                      ? "Clonagem realizada com sucesso"
-                      : "Erro na clonagem"
-                  }}
-                </p>
-              </div>
-
-              <div class="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p class="text-gray-400">ID da nova solicitação</p>
-                  <p class="font-medium">
-                    {{ res.newId ? res.newId : "sem informação" }}
+                    {{
+                      res.success
+                        ? "Clonagem realizada com sucesso"
+                        : "Erro na clonagem"
+                    }}
                   </p>
                 </div>
 
-                <div>
-                  <p class="text-gray-400">ProcessId</p>
-                  <p class="font-medium">
-                    {{ res.processId ? res.processId : "sem informação" }}
-                  </p>
-                </div>
+                <div v-if="res.success" class="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p class="text-gray-400">ID da nova solicitação</p>
+                    <p class="font-medium">
+                      {{ res.newId ? res.newId : "sem informação" }}
+                    </p>
+                  </div>
 
-                <div>
-                  <p class="text-gray-400">Data da clonagem</p>
-                  <p class="font-medium">
-                    {{ new Date(res.date).toLocaleString() }}
-                  </p>
-                </div>
+                  <div>
+                    <p class="text-gray-400">ProcessId</p>
+                    <p class="font-medium">
+                      {{ res.processId ? res.processId : "sem informação" }}
+                    </p>
+                  </div>
 
-                <div>
-                  <p class="text-gray-400">Resultado</p>
-                  <span
-                    class="inline-block px-2 py-1 text-xs rounded bg-green-100 text-green-700"
-                  >
-                    {{ res.success ? "Sucesso" : "Erro" }}
-                  </span>
+                  <div>
+                    <p class="text-gray-400">Data da clonagem</p>
+                    <p class="font-medium">
+                      {{ new Date(res.date).toLocaleString() }}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p class="text-gray-400">Resultado</p>
+                    <span
+                      class="inline-block px-2 py-1 text-xs rounded bg-green-100 text-green-700"
+                    >
+                      {{ res.success ? "Sucesso" : "Erro" }}
+                    </span>
+                  </div>
+                </div>
+                <div v-else class="grid grid-cols-2 gap-4 text-sm">
+                  {{ res.error }}
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            <!-- ERRO -->
+      <!-- conteúdo forms interno -->
+      <div
+        v-if="activeTab === 'formsInt'"
+        class="space-y-8 animate-in fade-in duration-500"
+      >
+        <div class="p-10">
+          <div class="space-y-8 animate-in fade-in duration-500">
+            <div class="shadow-slate-200/60">
+              <!-- formulario de clonagem -->
+              <form @submit.prevent="handleGenerate" class="space-y-6">
+                <!-- campo de solicitação id -->
+                <div class="w-full">
+                  <label
+                    class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
+                  >
+                    Document ID
+                  </label>
+                  <input
+                    required="true"
+                    v-model="solicitacaoId"
+                    type="text"
+                    placeholder="Ex: 2941"
+                    class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
+                  />
+                </div>
+
+                <div class="space-y-4">
+                  <div
+                    class="flex items-center gap-2 text-[#002D72] font-bold mb-4"
+                  >
+                    <MapPin class="w-4 h-4" />
+                    <span>Servidor de Produção da Solicitação</span>
+                  </div>
+
+                  <!-- campo de url de destino -->
+                  <div>
+                    <label
+                      class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
+                      >URL</label
+                    >
+                    <div class="relative">
+                      <Link
+                        class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
+                      <input
+                        required="true"
+                        v-model="urlSource"
+                        type="text"
+                        placeholder="https://source.com"
+                        class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  :disabled="isLoading"
+                  type="submit"
+                  class="w-full bg-[#003087] hover:bg-[#00266b] text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 transition-all active:scale-[0.99] mt-8"
+                >
+                  <Repeat class="w-4 h-4 text-slate-400" />
+                  Clonar Forms interno
+                </button>
+              </form>
+
+              <!-- Feedback -->
+              <div
+                v-if="isResFormsInt"
+                class="mt-4 p-4 rounded-2xl shadow bg-white border"
+              >
+                <div class="flex items-center gap-3 mb-4">
+                  <div
+                    class="w-10 h-10 flex items-center justify-center rounded-full"
+                    :class="res.success ? 'bg-green-100' : 'bg-red-100'"
+                  >
+                    <span
+                      class="text-xl"
+                      :class="res.success ? 'text-green-600' : 'text-red-600'"
+                    >
+                      {{ res.success ? "✔" : "✖" }}
+                    </span>
+                  </div>
+
+                  <p
+                    class="text-lg font-semibold"
+                    :class="res.success ? 'text-green-600' : 'text-red-600'"
+                  >
+                    {{
+                      res.success
+                        ? "Clonagem realizada com sucesso"
+                        : "Erro na clonagem"
+                    }}
+                  </p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p class="text-gray-400">ID do novo documento</p>
+                    <p class="font-medium">
+                      {{ res.newId ? res.newId : "sem informação" }}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p class="text-gray-400">ProcessId</p>
+                    <p class="font-medium">
+                      {{ res.processId ? res.processId : "sem informação" }}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p class="text-gray-400">Data da clonagem</p>
+                    <p class="font-medium">
+                      {{ new Date(res.date).toLocaleString() }}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p class="text-gray-400">Resultado</p>
+                    <span
+                      class="inline-block px-2 py-1 text-xs rounded bg-green-100 text-green-700"
+                    >
+                      {{ res.success ? "Sucesso" : "Erro" }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
