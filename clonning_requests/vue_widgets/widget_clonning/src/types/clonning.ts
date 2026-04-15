@@ -2,8 +2,12 @@ export interface ClonningData {
   solicitacao_id: number;
   destination: string;
   url_source: string;
-  //consumer_key: string;
-  //consumer_secret: string;
+}
+
+export interface FormsIntData {
+  documentId: number;
+  destination: string;
+  url_source: string;
 }
 
 export interface Params {

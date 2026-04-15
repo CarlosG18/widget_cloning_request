@@ -1,6 +1,15 @@
-import type { ClonningData, Params, Filter, Response } from "../types/clonning";
-import OAuth from "oauth-1.0a";
-import CryptoJS from "crypto-js";
+import type {
+  ClonningData,
+  Params,
+  Response,
+  FormsIntData,
+} from "../types/clonning";
+import {
+  encriptar,
+  initProcess,
+  getdatasetAuth,
+  getDataset,
+} from "./utilsServices";
 
 export async function ClonningRequest(data: ClonningData) {
   const retorno: Response = {
@@ -28,6 +37,10 @@ export async function ClonningRequest(data: ClonningData) {
       ],
     );
 
+    if (!resDataset || resDataset.length === 0) {
+      throw new Error("Não foi possivel acessar o dataset com autenticação");
+    }
+
     // criando os parametros para a função de start process
     const params: Params = {
       processID: resDataset.processID,
@@ -42,6 +55,10 @@ export async function ClonningRequest(data: ClonningData) {
       data.destination,
     );
 
+    if (!encryptedProcessId || encryptedProcessId.length === 0) {
+      throw new Error("Não foi possivel realizar o encrypto do id_processo");
+    }
+
     // realizar o start process no endpoint do fluig de homologação
     const newId = await initProcess(
       urlbase,
@@ -50,6 +67,10 @@ export async function ClonningRequest(data: ClonningData) {
       params.formFields,
       encryptedProcessId,
     );
+
+    if (!newId || newId.length === 0) {
+      throw new Error("Não foi possivel iniciar o processo");
+    }
 
     // data
     const dataAtual = new Date();
@@ -60,227 +81,73 @@ export async function ClonningRequest(data: ClonningData) {
 
     return retorno;
   } catch (e: any) {
-    console.error("erro ->>>>>>>>>>>>>>>>>>>>>", e);
+    console.error("erro completo:", e);
+
     retorno.success = false;
-    retorno.error = e.message;
+
+    if (e?.message) {
+      retorno.error = e.message;
+    } else if (typeof e === "string") {
+      retorno.error = e;
+    } else if (e?.response?.data) {
+      retorno.error = JSON.stringify(e.response.data);
+    } else {
+      retorno.error = "Erro desconhecido";
+    }
+
     return retorno;
   }
 }
 
-export async function initProcess(
-  baseUrl: string,
-  targetState: Number,
-  targetAssignee: string,
-  formFields: any,
-  codProcess: string,
-) {
-  const date = new Date().toISOString().split("T")[0];
-  const time = new Date().toISOString().split("T")[1];
-
-  const body = {
-    endpoint: "start",
-    method: "post",
-    params: JSON.stringify({
-      targetState: targetState,
-      targetAssignee: targetAssignee, // trocar para o grupo correto quando subir para produção
-      comment: `Solicitação aberta ${date} ${time}`,
-      formFields: formFields,
-    }),
-    process: codProcess,
-  };
-
+export async function ClonningFormsInt(data: FormsIntData) {
   try {
-    const url = `${baseUrl}/fluighub/rest/service/execute/movestart-process`;
-    const response = await fetch(url, {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
-    const res: any = await response.json();
-
-    if (res.code != 200) {
-      throw new Error("Erro ao carregar o arquivo");
-    }
-
-    return JSON.parse(res.message).processInstanceId;
-  } catch (err) {
-    console.log(err);
-  }
-}
-
-export async function encriptar(id_processo: string, baseUrl: string) {
-  try {
-    var url = `${baseUrl}/fluighub/rest/service/execute/crypto`;
-
-    var response = await fetch(url, {
-      method: "POST",
-      body: JSON.stringify({
-        endpoint: "crypto",
-        passphrase: id_processo,
-      }),
-    });
-
-    var res = await response.json();
-
-    if (res.code != 200) {
-      throw new Error("Erro em encriptar");
-    }
-
-    return res.message;
-  } catch (err) {
-    console.log("Erro ao encriptar", err);
-    return null;
-  }
-}
-
-export function getOAuthHeader(
-  requestData: any,
-  consumerKey: string,
-  consumerSecret: string,
-) {
-  // token do fluig de producao do sabrae
-  //   const token = {
-  //     key: "33586d58-8adf-4a44-80d1-9ffe17866c62",
-  //     secret:
-  //       "543ecd89-908f-4681-8b8f-32ac719a115b04ae763c-51e0-436f-908a-66635a83807d",
-  //   };
-
-  // token do fluig da strategi
-  const token = {
-    key: "",
-    secret: "",
-  };
-
-  const oauth = new OAuth({
-    consumer: {
-      key: consumerKey,
-      secret: consumerSecret,
-    },
-    signature_method: "HMAC-SHA1",
-    hash_function(base_string: string, key: string) {
-      return CryptoJS.HmacSHA1(base_string, key).toString(CryptoJS.enc.Base64);
-    },
-  });
-
-  // Gera o objeto de autorização
-  return oauth.toHeader(oauth.authorize(requestData, token));
-}
-
-export async function getDataset(
-  baseUrl: string,
-  datasetId: string,
-  filters?: Filter[],
-  search?: boolean,
-) {
-  const options = {
-    endpoint: "dataset",
-    method: "get",
-    likeSearch: search ? true : false,
-    params: `datasetId=${datasetId}${filters ? filters.map((f) => `&constraintsField=${f.field}&constraintsInitialValue=${f.initialValue}&constraintsFinalValue=${f.finalValue}${f.type ? `&constraintsType=${f.type}` : ""}`).join("") : ""}`,
-  };
-
-  try {
-    const url = `${baseUrl}/fluighub/rest/service/execute/datasearch`;
-
-    console.log("URL: ", url);
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(options),
-    });
-    const res: any = await response.json();
-
-    if (response.status != 200) {
-      throw new Error("Erro ao buscar dados!");
-    }
-
-    if (res.code != 200) {
-      throw new Error("Erro ao buscar dados!");
-    }
-
-    let resMessage = res.message;
-
-    if (typeof res.message === "string") {
-      resMessage = JSON.parse(res.message);
-    }
-
-    if (resMessage?.values && Array.isArray(resMessage.values)) {
-      return resMessage.values;
-    }
-
-    return [];
-  } catch (err) {
-    return [];
-  } finally {
-  }
-}
-
-export async function getdatasetAuth(
-  baseUrl: string,
-  datasetId: string,
-  filters?: Filter[],
-  search?: boolean,
-) {
-  const options = {
-    endpoint: "dataset",
-    method: "get",
-    likeSearch: search ? true : false,
-    params: `datasetId=${datasetId}${filters ? filters.map((f) => `&constraintsField=${f.field}&constraintsInitialValue=${f.initialValue}&constraintsFinalValue=${f.finalValue}${f.type ? `&constraintsType=${f.type}` : ""}`).join("") : ""}`,
-  };
-
-  try {
-    const url = `${baseUrl}/fluighub/rest/service/execute/datasearchauth`;
-
-    console.log("URL: ", url);
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ACCESS_TOKEN: "d9c659b5-8ab0-48e6-9f33-e5fb259fe125",
-        TOKEN_SECRET:
-          "010b537f-7308-4b12-b2f4-8f477cb6c7f7ef11a573-bb30-450f-84ec-ccd1613283a0",
+    // obter o dataset pelo id do documento -> usando o dataset document
+    const documentIdRaizSearch = await getDataset(data.url_source, "document", [
+      {
+        field: "documentPK.documentId",
+        initialValue: data.documentId.toString(),
+        finalValue: data.documentId.toString(),
+        type: "MUST",
       },
-      body: JSON.stringify(options),
-    });
-    const res: any = await response.json();
+    ]);
 
-    if (response.status != 200) {
-      throw new Error("Erro ao buscar dados!");
+    const documentIdRaiz = documentIdRaizSearch[0].documentPropertyNumber;
+
+    console.log("documentIdRaiz: ", documentIdRaiz);
+
+    const dataset = await getDataset(data.url_source, "document", [
+      {
+        field: "documentPK.documentId",
+        initialValue: documentIdRaiz,
+        finalValue: documentIdRaiz,
+        type: "MUST",
+      },
+    ]);
+
+    // pegando o nome do dataset
+    const datasetName = dataset[0].datasetName;
+
+    console.log("datasetName: ", datasetName);
+
+    // realizar a solicitação para o endpoint do fluig de produção
+    const resDataset = await getDataset(data.url_source, datasetName, [
+      {
+        field: "documentId",
+        initialValue: data.documentId.toString(),
+        finalValue: data.documentId.toString(),
+        type: "MUST",
+      },
+    ]);
+
+    console.log("resDataset: ", resDataset);
+
+    if (!resDataset || resDataset.length === 0) {
+      throw new Error("Não foi possivel acessar o dataset");
     }
 
-    if (res.code != 200) {
-      throw new Error("Erro ao buscar dados!");
-    }
-
-    let resMessage = res.message;
-
-    if (typeof res.message === "string") {
-      resMessage = JSON.parse(res.message);
-    }
-
-    if (resMessage?.values && Array.isArray(resMessage.values)) {
-      return resMessage.values;
-    }
-
-    return [];
-  } catch (err) {
-    return [];
-  } finally {
+    return resDataset;
+  } catch (e: any) {
+    console.error("erro completo:", e);
+    throw new Error("Erro na solicitação");
   }
-}
-
-export function decryptAES(encryptedBase64: string): string {
-  const key = CryptoJS.enc.Utf8.parse(import.meta.env.VITE_KEY_CRYPTO);
-
-  const decrypted = CryptoJS.AES.decrypt(
-    {
-      ciphertext: CryptoJS.enc.Base64.parse(encryptedBase64),
-    } as any,
-    key,
-    {
-      mode: CryptoJS.mode.ECB,
-      padding: CryptoJS.pad.Pkcs7,
-    },
-  );
-
-  return decrypted.toString(CryptoJS.enc.Utf8);
 }

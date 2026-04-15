@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from "vue";
 import { Link, Repeat, MapPin, FileInput, Workflow } from "lucide-vue-next";
-import { ClonningRequest } from "../services/fluigService";
-import type { ClonningData, Response } from "../types/clonning";
+import { ClonningRequest, ClonningFormsInt } from "../services/fluigService";
+import type { ClonningData, Response, FormsIntData } from "../types/clonning";
 import { validateNumeric } from "../utils/validators";
+import CardFeedBack from "../components/CardFeedBack.vue";
 
+// Solicitação
 const solicitacaoId = ref("");
 const urlSource = ref("");
-//const userSource = ref("");
-//const passSource = ref("");
+
+// Forms Int
+const documentId = ref("");
+const urlSourceDocument = ref("");
 
 const activeTab = ref("solicitacao"); // Aba padrão
 
@@ -26,13 +30,11 @@ const isURLValid = ref<boolean>(true);
 
 const isLoading = ref<boolean>(false);
 
-const handleGenerate = () => {
+const cloneRequest = () => {
   var data: ClonningData = {
     solicitacao_id: Number(solicitacaoId.value),
     destination: getUrlBase(),
     url_source: urlSource.value,
-    //consumer_key: userSource.value,
-    //consumer_secret: passSource.value,
   };
 
   isURLValid.value = validateURL(urlSource.value);
@@ -40,15 +42,42 @@ const handleGenerate = () => {
 
   ClonningRequest(data)
     .then((response) => {
+      console.log("response: ", response);
       res.success = response.success;
       res.newId = response.newId;
       res.processId = response.processId;
       res.date = response.date;
+      res.error = response.error;
       isResSolicitacao.value = true;
     })
     .catch((error) => {
+      console.log("response: ", error);
       res.error = error.message;
       isResSolicitacao.value = false;
+    });
+};
+
+const cloneFormsInt = () => {
+  var data: FormsIntData = {
+    documentId: Number(documentId.value),
+    destination: getUrlBase(),
+    url_source: urlSourceDocument.value,
+  };
+
+  ClonningFormsInt(data)
+    .then((response) => {
+      console.log("response: ", response);
+      res.success = response.success;
+      res.newId = response.newId;
+      res.processId = response.processId;
+      res.date = response.date;
+      res.error = response.error;
+      isResFormsInt.value = true;
+    })
+    .catch((error) => {
+      console.log("response: ", error);
+      res.error = error.message;
+      isResFormsInt.value = false;
     });
 };
 
@@ -56,29 +85,28 @@ function getUrlBase() {
   return window.location.origin;
 }
 
-function validateURL(url: string) {
-  if (url === "") {
-    isURLValid.value = true;
-    return true;
-  }
+function validateURL(url: string): boolean {
+  if (!url) return true;
 
   const pattern = new RegExp(
-    "^(https?:\\/\\/)?" + // protocol
+    "^(https?:\\/\\/)?" +
       "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" +
       "((\\d{1,3}\\.){3}\\d{1,3}))" +
-      "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" +
+      "(\\:\\d+)?" +
+      "(\\/[-a-z\\d%_.~+]*)*" +
       "(\\?[;&a-z\\d%_.~+=-]*)?" +
-      "(\\#[-a-z\\d_]*)?$",
+      "(\\#[-a-z\\d_/]*)?$",
     "i",
   );
 
-  return !!pattern.test(url);
+  return pattern.test(url);
 }
 
-watch([solicitacaoId, urlSource], () => {
+watch([solicitacaoId, documentId], () => {
   if (!validateNumeric(solicitacaoId.value)) {
     // se não for numero não deixa atualizar o valor
     solicitacaoId.value = solicitacaoId.value.replace(/\D/g, "");
+    documentId.value = documentId.value.replace(/\D/g, "");
   }
 });
 </script>
@@ -137,7 +165,7 @@ watch([solicitacaoId, urlSource], () => {
           <div class="space-y-8 animate-in fade-in duration-500">
             <div class="shadow-slate-200/60">
               <!-- formulario de clonagem -->
-              <form @submit.prevent="handleGenerate" class="space-y-6">
+              <form @submit.prevent="cloneRequest" class="space-y-6">
                 <!-- campo de solicitação id -->
                 <div class="w-full">
                   <label
@@ -203,70 +231,7 @@ watch([solicitacaoId, urlSource], () => {
               </form>
 
               <!-- Feedback -->
-              <div
-                v-if="isResSolicitacao"
-                class="mt-4 p-4 rounded-2xl shadow bg-white border"
-              >
-                <div class="flex items-center gap-3 mb-4">
-                  <div
-                    class="w-10 h-10 flex items-center justify-center rounded-full"
-                    :class="res.success ? 'bg-green-100' : 'bg-red-100'"
-                  >
-                    <span
-                      class="text-xl"
-                      :class="res.success ? 'text-green-600' : 'text-red-600'"
-                    >
-                      {{ res.success ? "✔" : "✖" }}
-                    </span>
-                  </div>
-
-                  <p
-                    class="text-lg font-semibold"
-                    :class="res.success ? 'text-green-600' : 'text-red-600'"
-                  >
-                    {{
-                      res.success
-                        ? "Clonagem realizada com sucesso"
-                        : "Erro na clonagem"
-                    }}
-                  </p>
-                </div>
-
-                <div v-if="res.success" class="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p class="text-gray-400">ID da nova solicitação</p>
-                    <p class="font-medium">
-                      {{ res.newId ? res.newId : "sem informação" }}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p class="text-gray-400">ProcessId</p>
-                    <p class="font-medium">
-                      {{ res.processId ? res.processId : "sem informação" }}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p class="text-gray-400">Data da clonagem</p>
-                    <p class="font-medium">
-                      {{ new Date(res.date).toLocaleString() }}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p class="text-gray-400">Resultado</p>
-                    <span
-                      class="inline-block px-2 py-1 text-xs rounded bg-green-100 text-green-700"
-                    >
-                      {{ res.success ? "Sucesso" : "Erro" }}
-                    </span>
-                  </div>
-                </div>
-                <div v-else class="grid grid-cols-2 gap-4 text-sm">
-                  {{ res.error }}
-                </div>
-              </div>
+              <CardFeedBack :res="res" :isRes="isResSolicitacao" />
             </div>
           </div>
         </div>
@@ -281,7 +246,7 @@ watch([solicitacaoId, urlSource], () => {
           <div class="space-y-8 animate-in fade-in duration-500">
             <div class="shadow-slate-200/60">
               <!-- formulario de clonagem -->
-              <form @submit.prevent="handleGenerate" class="space-y-6">
+              <form @submit.prevent="cloneFormsInt" class="space-y-6">
                 <!-- campo de solicitação id -->
                 <div class="w-full">
                   <label
@@ -291,7 +256,7 @@ watch([solicitacaoId, urlSource], () => {
                   </label>
                   <input
                     required="true"
-                    v-model="solicitacaoId"
+                    v-model="documentId"
                     type="text"
                     placeholder="Ex: 2941"
                     class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
@@ -318,7 +283,8 @@ watch([solicitacaoId, urlSource], () => {
                       />
                       <input
                         required="true"
-                        v-model="urlSource"
+                        :input="validateURL(urlSource)"
+                        v-model="urlSourceDocument"
                         type="text"
                         placeholder="https://source.com"
                         class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
@@ -338,67 +304,7 @@ watch([solicitacaoId, urlSource], () => {
               </form>
 
               <!-- Feedback -->
-              <div
-                v-if="isResFormsInt"
-                class="mt-4 p-4 rounded-2xl shadow bg-white border"
-              >
-                <div class="flex items-center gap-3 mb-4">
-                  <div
-                    class="w-10 h-10 flex items-center justify-center rounded-full"
-                    :class="res.success ? 'bg-green-100' : 'bg-red-100'"
-                  >
-                    <span
-                      class="text-xl"
-                      :class="res.success ? 'text-green-600' : 'text-red-600'"
-                    >
-                      {{ res.success ? "✔" : "✖" }}
-                    </span>
-                  </div>
-
-                  <p
-                    class="text-lg font-semibold"
-                    :class="res.success ? 'text-green-600' : 'text-red-600'"
-                  >
-                    {{
-                      res.success
-                        ? "Clonagem realizada com sucesso"
-                        : "Erro na clonagem"
-                    }}
-                  </p>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p class="text-gray-400">ID do novo documento</p>
-                    <p class="font-medium">
-                      {{ res.newId ? res.newId : "sem informação" }}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p class="text-gray-400">ProcessId</p>
-                    <p class="font-medium">
-                      {{ res.processId ? res.processId : "sem informação" }}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p class="text-gray-400">Data da clonagem</p>
-                    <p class="font-medium">
-                      {{ new Date(res.date).toLocaleString() }}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p class="text-gray-400">Resultado</p>
-                    <span
-                      class="inline-block px-2 py-1 text-xs rounded bg-green-100 text-green-700"
-                    >
-                      {{ res.success ? "Sucesso" : "Erro" }}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <CardFeedBack :res="res" :isRes="isResFormsInt" />
             </div>
           </div>
         </div>
