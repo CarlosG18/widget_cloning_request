@@ -1,17 +1,23 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, reactive, watch } from "vue";
 import { Link, Repeat, MapPin } from "lucide-vue-next";
 import { ClonningRequest } from "../services/fluigService";
-import type { ClonningData } from "../types/clonning";
+import type { ClonningData, Response } from "../types/clonning";
 import { validateNumeric } from "../utils/validators";
 
 const solicitacaoId = ref("");
 const urlSource = ref("");
-const userSource = ref("");
-const passSource = ref("");
+//const userSource = ref("");
+//const passSource = ref("");
 
-const ResponseTxt = ref<string>("");
-const Response = ref<boolean>(false);
+const isRes = ref<boolean>(false);
+const res = reactive<Response>({
+  success: false,
+  newId: "",
+  processId: "",
+  date: "",
+  error: "",
+});
 
 const isLoading = ref<boolean>(false);
 
@@ -20,18 +26,21 @@ const handleGenerate = () => {
     solicitacao_id: Number(solicitacaoId.value),
     destination: getUrlBase(),
     url_source: urlSource.value,
-    consumer_key: userSource.value,
-    consumer_secret: passSource.value,
+    //consumer_key: userSource.value,
+    //consumer_secret: passSource.value,
   };
 
   ClonningRequest(data)
     .then((response) => {
-      Response.value = true;
-      ResponseTxt.value = JSON.stringify(response, null, 2);
+      res.success = response.success;
+      res.newId = response.newId;
+      res.processId = response.processId;
+      res.date = response.date;
+      isRes.value = true;
     })
     .catch((error) => {
-      Response.value = true;
-      ResponseTxt.value = error.message;
+      res.error = error.message;
+      isRes.value = false;
     });
 };
 
@@ -160,23 +169,70 @@ watch([solicitacaoId, urlSource], () => {
               </button>
             </form>
 
-            <!-- resposta gerada -->
+            <!-- Feedback -->
             <div
-              v-if="Response"
-              class="mt-10 pt-10 border-t border-slate-50 space-y-4"
+              v-if="isRes"
+              class="mt-4 p-4 rounded-2xl shadow bg-white border"
             >
-              <label
-                class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest"
-                >Resposta Gerada</label
-              >
-              <div class="relative group">
+              <div class="flex items-center gap-3 mb-4">
                 <div
-                  class="w-full p-5 bg-[#F0F5FF] rounded-2xl border border-blue-100 font-mono text-sm text-[#3E5C9A] break-all pr-16 leading-relaxed"
+                  class="w-10 h-10 flex items-center justify-center rounded-full"
+                  :class="res.success ? 'bg-green-100' : 'bg-red-100'"
                 >
-                  {{ ResponseTxt }}
+                  <span
+                    class="text-xl"
+                    :class="res.success ? 'text-green-600' : 'text-red-600'"
+                  >
+                    {{ res.success ? "✔" : "✖" }}
+                  </span>
+                </div>
+
+                <p
+                  class="text-lg font-semibold"
+                  :class="res.success ? 'text-green-600' : 'text-red-600'"
+                >
+                  {{
+                    res.success
+                      ? "Clonagem realizada com sucesso"
+                      : "Erro na clonagem"
+                  }}
+                </p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p class="text-gray-400">ID da nova solicitação</p>
+                  <p class="font-medium">
+                    {{ res.newId ? res.newId : "sem informação" }}
+                  </p>
+                </div>
+
+                <div>
+                  <p class="text-gray-400">ProcessId</p>
+                  <p class="font-medium">
+                    {{ res.processId ? res.processId : "sem informação" }}
+                  </p>
+                </div>
+
+                <div>
+                  <p class="text-gray-400">Data da clonagem</p>
+                  <p class="font-medium">
+                    {{ new Date(res.date).toLocaleString() }}
+                  </p>
+                </div>
+
+                <div>
+                  <p class="text-gray-400">Resultado</p>
+                  <span
+                    class="inline-block px-2 py-1 text-xs rounded bg-green-100 text-green-700"
+                  >
+                    {{ res.success ? "Sucesso" : "Erro" }}
+                  </span>
                 </div>
               </div>
             </div>
+
+            <!-- ERRO -->
           </div>
         </div>
       </div>

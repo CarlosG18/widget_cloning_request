@@ -1,56 +1,52 @@
-import type { ClonningData, Params } from "../types/clonning";
+import type { ClonningData, Params, Filter, Response } from "../types/clonning";
 import OAuth from "oauth-1.0a";
 import CryptoJS from "crypto-js";
 
 export async function ClonningRequest(data: ClonningData) {
   try {
     const urlbase = data.destination;
+    const retorno: Response = {
+      success: false,
+      newId: "",
+      processId: "",
+      date: "",
+      error: "",
+    };
 
     // realizar a solicitação para o endpoint do fluig de produção
-    const body = {
-      endpoint: "",
-      method: "",
-      params: JSON.stringify({
-        solicitacao_id: data.solicitacao_id,
-      }),
-    };
-
-    const requestData = {
-      url: urlbase + body.endpoint,
-      method: body.method,
-    };
-
-    const headers: any = getOAuthHeader(
-      requestData,
-      data.consumer_key,
-      data.consumer_secret,
+    const resDataset = await getdatasetAuth(
+      data.url_source,
+      "dsGetParamsClone",
+      [
+        {
+          field: "processInstanceId",
+          initialValue: data.solicitacao_id.toString(),
+          finalValue: data.solicitacao_id.toString(),
+          type: "MUST",
+        },
+      ],
     );
 
-    const url = `${urlbase}/fluighub/rest/service/execute/movestart-process`;
-    const response = await fetch(url, {
-      method: "",
-      headers: headers,
-      body: JSON.stringify(body),
-    });
-    const res: any = await response.json();
-
-    if (res.code != 200) {
-      throw new Error("Erro ao carregar o arquivo");
-    }
+    console.log("resDataset: ", resDataset);
 
     // criando os parametros para a função de start process
     const params: Params = {
-      processID: res.processID,
-      targetState: res.targetState,
-      targetAssignee: res.targetAssignee,
-      formFields: res.formFields,
+      processID: resDataset.processID,
+      targetState: resDataset.targetState,
+      targetAssignee: resDataset.targetAssignee,
+      formFields: resDataset.formFields,
     };
+
+    console.log("params.processID: ", params.processID);
+    console.log("data.destination: ", data.destination);
 
     // realizar o encrypto do id_processo
     const encryptedProcessId = await encriptar(
       params.processID,
       data.destination,
     );
+
+    console.log();
 
     // realizar o start process no endpoint do fluig de homologação
     const newId = await initProcess(
@@ -61,7 +57,12 @@ export async function ClonningRequest(data: ClonningData) {
       encryptedProcessId,
     );
 
-    return { success: true, newId };
+    retorno.success = true;
+    retorno.newId = newId;
+    retorno.processId = encryptedProcessId;
+    retorno.date = new Date().toISOString();
+
+    return retorno;
   } catch (e: any) {
     console.error(e);
     throw new Error("Falha na clonagem: " + e.message);
@@ -164,4 +165,124 @@ export function getOAuthHeader(
 
   // Gera o objeto de autorização
   return oauth.toHeader(oauth.authorize(requestData, token));
+}
+
+export async function getDataset(
+  baseUrl: string,
+  datasetId: string,
+  filters?: Filter[],
+  search?: boolean,
+) {
+  const options = {
+    endpoint: "dataset",
+    method: "get",
+    likeSearch: search ? true : false,
+    params: `datasetId=${datasetId}${filters ? filters.map((f) => `&constraintsField=${f.field}&constraintsInitialValue=${f.initialValue}&constraintsFinalValue=${f.finalValue}${f.type ? `&constraintsType=${f.type}` : ""}`).join("") : ""}`,
+  };
+
+  try {
+    const url = `${baseUrl}/fluighub/rest/service/execute/datasearch`;
+
+    console.log("URL: ", url);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(options),
+    });
+    const res: any = await response.json();
+
+    if (response.status != 200) {
+      throw new Error("Erro ao buscar dados!");
+    }
+
+    if (res.code != 200) {
+      throw new Error("Erro ao buscar dados!");
+    }
+
+    let resMessage = res.message;
+
+    if (typeof res.message === "string") {
+      resMessage = JSON.parse(res.message);
+    }
+
+    if (resMessage?.values && Array.isArray(resMessage.values)) {
+      return resMessage.values;
+    }
+
+    return [];
+  } catch (err) {
+    return [];
+  } finally {
+  }
+}
+
+export async function getdatasetAuth(
+  baseUrl: string,
+  datasetId: string,
+  filters?: Filter[],
+  search?: boolean,
+) {
+  const options = {
+    endpoint: "dataset",
+    method: "get",
+    likeSearch: search ? true : false,
+    params: `datasetId=${datasetId}${filters ? filters.map((f) => `&constraintsField=${f.field}&constraintsInitialValue=${f.initialValue}&constraintsFinalValue=${f.finalValue}${f.type ? `&constraintsType=${f.type}` : ""}`).join("") : ""}`,
+  };
+
+  try {
+    const url = `${baseUrl}/fluighub/rest/service/execute/datasearchauth`;
+
+    console.log("URL: ", url);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ACCESS_TOKEN: "d9c659b5-8ab0-48e6-9f33-e5fb259fe125",
+        TOKEN_SECRET:
+          "010b537f-7308-4b12-b2f4-8f477cb6c7f7ef11a573-bb30-450f-84ec-ccd1613283a0",
+      },
+      body: JSON.stringify(options),
+    });
+    const res: any = await response.json();
+
+    if (response.status != 200) {
+      throw new Error("Erro ao buscar dados!");
+    }
+
+    if (res.code != 200) {
+      throw new Error("Erro ao buscar dados!");
+    }
+
+    let resMessage = res.message;
+
+    if (typeof res.message === "string") {
+      resMessage = JSON.parse(res.message);
+    }
+
+    if (resMessage?.values && Array.isArray(resMessage.values)) {
+      return resMessage.values;
+    }
+
+    return [];
+  } catch (err) {
+    return [];
+  } finally {
+  }
+}
+
+export function decryptAES(encryptedBase64: string): string {
+  const key = CryptoJS.enc.Utf8.parse(import.meta.env.VITE_KEY_CRYPTO);
+
+  const decrypted = CryptoJS.AES.decrypt(
+    {
+      ciphertext: CryptoJS.enc.Base64.parse(encryptedBase64),
+    } as any,
+    key,
+    {
+      mode: CryptoJS.mode.ECB,
+      padding: CryptoJS.pad.Pkcs7,
+    },
+  );
+
+  return decrypted.toString(CryptoJS.enc.Utf8);
 }
