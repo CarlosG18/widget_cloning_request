@@ -1,8 +1,13 @@
 <script lang="ts" setup>
+import { Toaster, toast } from "vue-sonner";
+import "vue-sonner/style.css";
+
 const props = defineProps<{
   res: any;
   isRes: boolean;
 }>();
+
+toast.error("Event has not been created");
 </script>
 
 <template>
@@ -65,6 +70,7 @@ const props = defineProps<{
       </div>
     </div>
     <div v-else class="text-sm">
+      <Toaster />
       {{ res.error }}
     </div>
   </div>
