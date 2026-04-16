@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <section name="Workbench">
 	<section name="org.eclipse.ui.internal.QuickAccess">
-		<item value="669" key="dialogHeight"/>
-		<item value="1194" key="dialogWidth"/>
+		<item value="675" key="dialogHeight"/>
+		<item value="1200" key="dialogWidth"/>
 		<list key="textEntries">
 		</list>
 		<list key="orderedElements">
@@ -13,5 +13,9 @@
 		</list>
 	</section>
 	<section name="ImportExportAction">
+		<item value="com.fluig.wcm.eclipse.component.wizard.ExportCreatePackageWizardID" key="ImportExportPage.STORE_SELECTED_EXPORT_WIZARD_ID"/>
+		<list key="ImportExportPage.STORE_EXPANDED_EXPORT_CATEGORIES">
+			<item value="com.totvs.tds.ecm.category.bpm.exportWizard"/>
+		</list>
 	</section>
 </section>

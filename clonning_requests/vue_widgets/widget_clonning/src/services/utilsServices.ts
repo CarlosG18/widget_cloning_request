@@ -1,4 +1,6 @@
 import type { Filter } from "../types/clonning";
+import OAuth from "oauth-1.0a";
+import CryptoJS from "crypto-js";
 
 export async function initProcess(
   baseUrl: string,
@@ -114,7 +116,7 @@ export async function getDataset(
   }
 }
 
-export async function getdatasetAuth(
+/*export async function getdatasetAuth(
   baseUrl: string,
   datasetId: string,
   filters?: Filter[],
@@ -135,9 +137,8 @@ export async function getdatasetAuth(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ACCESS_TOKEN: "d9c659b5-8ab0-48e6-9f33-e5fb259fe125",
-        TOKEN_SECRET:
-          "010b537f-7308-4b12-b2f4-8f477cb6c7f7ef11a573-bb30-450f-84ec-ccd1613283a0",
+        ACCESS_TOKEN: "",
+        TOKEN_SECRET: "",
       },
       body: JSON.stringify(options),
     });
@@ -165,5 +166,90 @@ export async function getdatasetAuth(
   } catch (err) {
     return [];
   } finally {
+  }
+}*/
+
+export async function getdatasetAuth(
+  baseUrl: string,
+  datasetId: string,
+  type_credentials: "STRATEGI" | "SEBRAE",
+  filters?: Filter[],
+) {
+  const credentials = {
+    STRATEGI: {
+      ck: import.meta.env.VITE_CONSUMER_KEY_STRATEGI_HML,
+      cs: import.meta.env.VITE_CONSUMER_SECRET_STRATEGI_HML,
+      at: import.meta.env.VITE_ACCESS_TOKEN_STRATEGI_HML,
+      ts: import.meta.env.VITE_TOKEN_SECRET_STRATEGI_HML,
+    },
+    SEBRAE: {
+      ck: import.meta.env.VITE_CONSUMER_KEY_SEBRAERN_HML,
+      cs: import.meta.env.VITE_CONSUMER_SECRET_SEBRAERN_HML,
+      at: import.meta.env.VITE_ACCESS_TOKEN_SEBRAERN_HML,
+      ts: import.meta.env.VITE_TOKEN_SECRET_SEBRAERN_HML,
+    },
+  };
+
+  const oauth = new OAuth({
+    consumer: {
+      key: credentials[type_credentials].ck,
+      secret: credentials[type_credentials].cs,
+    },
+    signature_method: "HMAC-SHA1",
+    hash_function(base_string, key) {
+      return CryptoJS.HmacSHA1(base_string, key).toString(CryptoJS.enc.Base64);
+    },
+  });
+
+  const token = {
+    key: credentials[type_credentials].cs,
+    secret: credentials[type_credentials].ts,
+  };
+
+  const url = `${baseUrl}/fluighub/rest/service/execute/datasearchauth`;
+
+  const options = {
+    endpoint: "dataset",
+    method: "get",
+    params: `datasetId=${datasetId}${filters ? filters.map((f) => `&constraintsField=${f.field}&constraintsInitialValue=${f.initialValue})`).join("") : ""}`,
+  };
+
+  const request_data = {
+    url: url,
+    method: "POST",
+  };
+
+  const authData = oauth.authorize(request_data, token);
+  const authHeaderObj = oauth.toHeader(authData);
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: authHeaderObj.Authorization,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(options),
+    });
+
+    const res: any = await response.json();
+
+    if (response.status !== 200 || res.code !== 200) {
+      throw new Error("Erro ao buscar dados!");
+    }
+
+    let resMessage = res.message;
+    if (typeof res.message === "string") {
+      resMessage = JSON.parse(res.message);
+    }
+
+    if (resMessage?.values && Array.isArray(resMessage.values)) {
+      return resMessage.values;
+    }
+
+    return [];
+  } catch (err) {
+    console.error("Erro OAuth Fetch: ", err);
+    return [];
   }
 }

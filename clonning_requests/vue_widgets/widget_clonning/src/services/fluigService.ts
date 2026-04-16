@@ -27,6 +27,7 @@ export async function ClonningRequest(data: ClonningData) {
     const resDataset = await getdatasetAuth(
       data.url_source,
       "dsGetParamsClone",
+      "STRATEGI",
       [
         {
           field: "processInstanceId",
