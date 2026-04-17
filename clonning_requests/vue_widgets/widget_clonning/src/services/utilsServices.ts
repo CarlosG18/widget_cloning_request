@@ -177,23 +177,23 @@ export async function getdatasetAuth(
 ) {
   const credentials = {
     STRATEGI: {
-      ck: import.meta.env.VITE_CONSUMER_KEY_STRATEGI_HML,
-      cs: import.meta.env.VITE_CONSUMER_SECRET_STRATEGI_HML,
-      at: import.meta.env.VITE_ACCESS_TOKEN_STRATEGI_HML,
-      ts: import.meta.env.VITE_TOKEN_SECRET_STRATEGI_HML,
+      consumer_key: import.meta.env.VITE_CONSUMER_KEY_STRATEGI_HML,
+      consumer_secret: import.meta.env.VITE_CONSUMER_SECRET_STRATEGI_HML,
+      access_token: import.meta.env.VITE_ACCESS_TOKEN_STRATEGI_HML,
+      token_secret: import.meta.env.VITE_TOKEN_SECRET_STRATEGI_HML,
     },
     SEBRAE: {
-      ck: import.meta.env.VITE_CONSUMER_KEY_SEBRAERN_HML,
-      cs: import.meta.env.VITE_CONSUMER_SECRET_SEBRAERN_HML,
-      at: import.meta.env.VITE_ACCESS_TOKEN_SEBRAERN_HML,
-      ts: import.meta.env.VITE_TOKEN_SECRET_SEBRAERN_HML,
+      consumer_key: import.meta.env.VITE_CONSUMER_KEY_SEBRAERN_HML,
+      consumer_secret: import.meta.env.VITE_CONSUMER_SECRET_SEBRAERN_HML,
+      access_token: import.meta.env.VITE_ACCESS_TOKEN_SEBRAERN_HML,
+      token_secret: import.meta.env.VITE_TOKEN_SECRET_SEBRAERN_HML,
     },
   };
 
   const oauth = new OAuth({
     consumer: {
-      key: credentials[type_credentials].ck,
-      secret: credentials[type_credentials].cs,
+      key: credentials[type_credentials].consumer_key,
+      secret: credentials[type_credentials].consumer_secret,
     },
     signature_method: "HMAC-SHA1",
     hash_function(base_string, key) {
@@ -202,8 +202,8 @@ export async function getdatasetAuth(
   });
 
   const token = {
-    key: credentials[type_credentials].cs,
-    secret: credentials[type_credentials].ts,
+    key: credentials[type_credentials].access_token,
+    secret: credentials[type_credentials].token_secret,
   };
 
   const url = `${baseUrl}/fluighub/rest/service/execute/datasearchauth`;
@@ -211,7 +211,7 @@ export async function getdatasetAuth(
   const options = {
     endpoint: "dataset",
     method: "get",
-    params: `datasetId=${datasetId}${filters ? filters.map((f) => `&constraintsField=${f.field}&constraintsInitialValue=${f.initialValue})`).join("") : ""}`,
+    params: `datasetId=${datasetId}${filters ? filters.map((f) => `&constraintsField=${f.field}&constraintsInitialValue=${f.initialValue}`).join("") : ""}`,
   };
 
   const request_data = {
@@ -226,7 +226,7 @@ export async function getdatasetAuth(
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: authHeaderObj.Authorization,
+        ...authHeaderObj,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(options),
