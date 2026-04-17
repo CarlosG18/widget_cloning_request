@@ -5,17 +5,12 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div
-    v-if="res.sucess"
-    class="mt-4 p-4 rounded-2xl shadow bg-white border border-slate-200"
-  >
+  <div class="mt-4 p-4 rounded-2xl shadow bg-white border border-slate-200">
     <div class="flex items-center gap-3 mb-4">
       <div
         class="bg-green-100 w-10 h-10 flex items-center justify-center rounded-full"
       >
-        <span class="text-xl text-green-600">
-          {{ res.success }}
-        </span>
+        <span class="text-xl text-green-600"></span>
       </div>
 
       <p class="text-lg font-semibold text-green-600">

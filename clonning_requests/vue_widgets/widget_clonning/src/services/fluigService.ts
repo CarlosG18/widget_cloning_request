@@ -11,6 +11,8 @@ import {
   getDataset,
 } from "./utilsServices";
 
+import { transformarFields } from "../utils/formatFormFields";
+
 export async function ClonningRequest(data: ClonningData) {
   const retorno: Response = {
     success: false,
@@ -50,8 +52,6 @@ export async function ClonningRequest(data: ClonningData) {
       formFields: JSON.parse(resDataset[0].formsFields),
     };
 
-    console.log("params: ", params.formFields.formFields);
-
     // realizar o encrypto do id_processo
     const encryptedProcessId = await encriptar(
       params.processID,
@@ -67,7 +67,7 @@ export async function ClonningRequest(data: ClonningData) {
       urlbase,
       params.targetState,
       params.targetAssignee,
-      params.formFields.formFields[0],
+      transformarFields(params.formFields.formFields),
       encryptedProcessId,
     );
 
