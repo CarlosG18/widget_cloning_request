@@ -10,7 +10,7 @@ const props = defineProps<{
       <div
         class="bg-green-100 w-10 h-10 flex items-center justify-center rounded-full"
       >
-        <span class="text-xl text-green-600"></span>
+        <span class="text-xl text-green-600">✔</span>
       </div>
 
       <p class="text-lg font-semibold text-green-600">
