@@ -1,40 +1,25 @@
 <script lang="ts" setup>
-import { Toaster, toast } from "vue-sonner";
-import "vue-sonner/style.css";
-
 const props = defineProps<{
   res: any;
-  isRes: boolean;
 }>();
-
-toast.error("Event has not been created");
 </script>
 
 <template>
   <div
-    v-if="isRes"
+    v-if="res.sucess"
     class="mt-4 p-4 rounded-2xl shadow bg-white border border-slate-200"
   >
     <div class="flex items-center gap-3 mb-4">
       <div
-        class="w-10 h-10 flex items-center justify-center rounded-full"
-        :class="res.success ? 'bg-green-100' : 'bg-red-100'"
+        class="bg-green-100 w-10 h-10 flex items-center justify-center rounded-full"
       >
-        <span
-          class="text-xl"
-          :class="res.success ? 'text-green-600' : 'text-red-600'"
-        >
-          {{ res.success ? "✔" : "✖" }}
+        <span class="text-xl text-green-600">
+          {{ res.success }}
         </span>
       </div>
 
-      <p
-        class="text-lg font-semibold"
-        :class="res.success ? 'text-green-600' : 'text-red-600'"
-      >
-        {{
-          res.success ? "Clonagem realizada com sucesso" : "Erro na clonagem"
-        }}
+      <p class="text-lg font-semibold text-green-600">
+        Clonagem realizada com sucesso
       </p>
     </div>
 
@@ -65,13 +50,9 @@ toast.error("Event has not been created");
         <span
           class="inline-block px-2 py-1 text-xs rounded bg-green-100 text-green-700"
         >
-          {{ res.success ? "Sucesso" : "Erro" }}
+          {{ res.success }}
         </span>
       </div>
-    </div>
-    <div v-else class="text-sm">
-      <Toaster />
-      {{ res.error }}
     </div>
   </div>
 </template>

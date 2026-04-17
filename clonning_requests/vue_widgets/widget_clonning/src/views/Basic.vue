@@ -6,6 +6,9 @@ import type { ClonningData, Response, FormsIntData } from "../types/clonning";
 import { validateNumeric } from "../utils/validators";
 import CardFeedBack from "../components/CardFeedBack.vue";
 
+import { Toaster, toast } from "vue-sonner";
+import "vue-sonner/style.css";
+
 // Solicitação
 const solicitacaoId = ref("");
 const urlSource = ref("");
@@ -33,7 +36,9 @@ const isLoading = ref<boolean>(false);
 const cloneRequest = () => {
   var data: ClonningData = {
     solicitacao_id: Number(solicitacaoId.value),
-    destination: getUrlBase(),
+    //destination: getUrlBase(),
+    destination:
+      "https://strategiconsultoria176588.fluig.cloudtotvs.com.br:2450",
     url_source: urlSource.value,
   };
 
@@ -42,16 +47,23 @@ const cloneRequest = () => {
 
   ClonningRequest(data)
     .then((response) => {
-      console.log("response: ", response);
       res.success = response.success;
       res.newId = response.newId;
       res.processId = response.processId;
       res.date = response.date;
       res.error = response.error;
-      isResSolicitacao.value = true;
+      // feedback com toast
+      if (response.success) {
+        isResSolicitacao.value = true;
+        toast.success("Solicitação clonada com sucesso");
+      }
+
+      if (response.error) {
+        isResSolicitacao.value = false;
+        toast.error(`Erro na solicitação: ${response.error}`);
+      }
     })
     .catch((error) => {
-      console.log("response: ", error);
       res.error = error.message;
       isResSolicitacao.value = false;
     });
@@ -66,16 +78,23 @@ const cloneFormsInt = () => {
 
   ClonningFormsInt(data)
     .then((response) => {
-      console.log("response: ", response);
       res.success = response.success;
       res.newId = response.newId;
       res.processId = response.processId;
       res.date = response.date;
       res.error = response.error;
       isResFormsInt.value = true;
+
+      // feedback com toast
+      if (response.success) {
+        toast.success("Solicitação clonada com sucesso");
+      }
+
+      if (response.error) {
+        toast.error(`Erro na solicitação: ${response.error}`);
+      }
     })
     .catch((error) => {
-      console.log("response: ", error);
       res.error = error.message;
       isResFormsInt.value = false;
     });
@@ -102,12 +121,14 @@ function validateURL(url: string): boolean {
   return pattern.test(url);
 }
 
-watch([solicitacaoId, documentId], () => {
+watch([solicitacaoId, documentId, isResSolicitacao], () => {
   if (!validateNumeric(solicitacaoId.value)) {
     // se não for numero não deixa atualizar o valor
     solicitacaoId.value = solicitacaoId.value.replace(/\D/g, "");
     documentId.value = documentId.value.replace(/\D/g, "");
   }
+
+  console.log("isResSolicitacao: ", isResSolicitacao.value);
 });
 </script>
 
@@ -231,7 +252,12 @@ watch([solicitacaoId, documentId], () => {
               </form>
 
               <!-- Feedback -->
-              <CardFeedBack :res="res" :isRes="isResSolicitacao" />
+              <Toaster
+                richColors
+                :closeButton="true"
+                closeButtonPosition="top-right"
+              />
+              <CardFeedBack v-if="isResSolicitacao" :res="res" />
             </div>
           </div>
         </div>
@@ -304,7 +330,14 @@ watch([solicitacaoId, documentId], () => {
               </form>
 
               <!-- Feedback -->
-              <CardFeedBack :res="res" :isRes="isResFormsInt" />
+
+              <Toaster
+                richColors
+                :closeButton="true"
+                closeButtonPosition="top-right"
+              />
+
+              <CardFeedBack v-if="isResFormsInt" :res="res" />
             </div>
           </div>
         </div>

@@ -18,7 +18,7 @@ export async function initProcess(
     params: JSON.stringify({
       targetState: targetState,
       targetAssignee: targetAssignee, // trocar para o grupo correto quando subir para produção
-      comment: `Solicitação aberta ${date} ${time}`,
+      comment: `Clonagem Realizada - por widget clonning requests - ${date} ${time}`,
       formFields: formFields,
     }),
     process: codProcess,
@@ -115,59 +115,6 @@ export async function getDataset(
   } finally {
   }
 }
-
-/*export async function getdatasetAuth(
-  baseUrl: string,
-  datasetId: string,
-  filters?: Filter[],
-  search?: boolean,
-) {
-  const options = {
-    endpoint: "dataset",
-    method: "get",
-    likeSearch: search ? true : false,
-    params: `datasetId=${datasetId}${filters ? filters.map((f) => `&constraintsField=${f.field}&constraintsInitialValue=${f.initialValue}&constraintsFinalValue=${f.finalValue}${f.type ? `&constraintsType=${f.type}` : ""}`).join("") : ""}`,
-  };
-
-  try {
-    const url = `${baseUrl}/fluighub/rest/service/execute/datasearchauth`;
-
-    console.log("URL: ", url);
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ACCESS_TOKEN: "",
-        TOKEN_SECRET: "",
-      },
-      body: JSON.stringify(options),
-    });
-    const res: any = await response.json();
-
-    if (response.status != 200) {
-      throw new Error("Erro ao buscar dados!");
-    }
-
-    if (res.code != 200) {
-      throw new Error("Erro ao buscar dados!");
-    }
-
-    let resMessage = res.message;
-
-    if (typeof res.message === "string") {
-      resMessage = JSON.parse(res.message);
-    }
-
-    if (resMessage?.values && Array.isArray(resMessage.values)) {
-      return resMessage.values;
-    }
-
-    return [];
-  } catch (err) {
-    return [];
-  } finally {
-  }
-}*/
 
 export async function getdatasetAuth(
   baseUrl: string,

@@ -44,11 +44,13 @@ export async function ClonningRequest(data: ClonningData) {
 
     // criando os parametros para a função de start process
     const params: Params = {
-      processID: resDataset.processID,
-      targetState: resDataset.targetState,
-      targetAssignee: resDataset.targetAssignee,
-      formFields: resDataset.formFields,
+      processID: resDataset[0].processID,
+      targetState: resDataset[0].targetState,
+      targetAssignee: resDataset[0].targetAssignee,
+      formFields: JSON.parse(resDataset[0].formsFields),
     };
+
+    console.log("params: ", params.formFields.formFields);
 
     // realizar o encrypto do id_processo
     const encryptedProcessId = await encriptar(
@@ -65,7 +67,7 @@ export async function ClonningRequest(data: ClonningData) {
       urlbase,
       params.targetState,
       params.targetAssignee,
-      params.formFields,
+      params.formFields.formFields[0],
       encryptedProcessId,
     );
 
@@ -79,6 +81,7 @@ export async function ClonningRequest(data: ClonningData) {
     retorno.newId = newId;
     retorno.processId = params.processID;
     retorno.date = dataAtual.toISOString();
+    retorno.success = true;
 
     return retorno;
   } catch (e: any) {
@@ -114,8 +117,6 @@ export async function ClonningFormsInt(data: FormsIntData) {
 
     const documentIdRaiz = documentIdRaizSearch[0].documentPropertyNumber;
 
-    console.log("documentIdRaiz: ", documentIdRaiz);
-
     const dataset = await getDataset(data.url_source, "document", [
       {
         field: "documentPK.documentId",
@@ -128,8 +129,6 @@ export async function ClonningFormsInt(data: FormsIntData) {
     // pegando o nome do dataset
     const datasetName = dataset[0].datasetName;
 
-    console.log("datasetName: ", datasetName);
-
     // realizar a solicitação para o endpoint do fluig de produção
     const resDataset = await getDataset(data.url_source, datasetName, [
       {
@@ -139,8 +138,6 @@ export async function ClonningFormsInt(data: FormsIntData) {
         type: "MUST",
       },
     ]);
-
-    console.log("resDataset: ", resDataset);
 
     if (!resDataset || resDataset.length === 0) {
       throw new Error("Não foi possivel acessar o dataset");
