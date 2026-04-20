@@ -8,6 +8,7 @@ import CardFeedBack from "../components/CardFeedBack.vue";
 
 import { Toaster, toast } from "vue-sonner";
 import "vue-sonner/style.css";
+import { Spinner } from "@/components/ui/spinner";
 
 // Solicitação
 const solicitacaoId = ref("");
@@ -45,6 +46,7 @@ const cloneRequest = () => {
   isURLValid.value = validateURL(urlSource.value);
   if (!isURLValid.value) return;
 
+  isLoading.value = true;
   ClonningRequest(data)
     .then((response) => {
       res.success = response.success;
@@ -66,6 +68,9 @@ const cloneRequest = () => {
     .catch((error) => {
       res.error = error.message;
       isResSolicitacao.value = false;
+    })
+    .finally(() => {
+      isLoading.value = false;
     });
 };
 
@@ -76,6 +81,7 @@ const cloneFormsInt = () => {
     url_source: urlSourceDocument.value,
   };
 
+  isLoading.value = true;
   ClonningFormsInt(data)
     .then((response) => {
       res.success = response.success;
@@ -97,6 +103,9 @@ const cloneFormsInt = () => {
     .catch((error) => {
       res.error = error.message;
       isResFormsInt.value = false;
+    })
+    .finally(() => {
+      isLoading.value = false;
     });
 };
 
@@ -246,8 +255,9 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
                   type="submit"
                   class="w-full bg-[#003087] hover:bg-[#00266b] text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 transition-all active:scale-[0.99] mt-8"
                 >
-                  <Repeat class="w-4 h-4 text-slate-400" />
-                  clonar solicitação
+                  <Repeat class="w-4 h-4 text-slate-400" v-if="!isLoading" />
+                  <Spinner v-if="isLoading" />
+                  {{ isLoading ? "Clonando..." : "Clonar solicitação" }}
                 </button>
               </form>
 
