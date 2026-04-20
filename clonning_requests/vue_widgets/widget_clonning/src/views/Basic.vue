@@ -1,67 +1,111 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import {
-  Link,
-  User,
-  Lock,
-  Repeat,
-  MapPin,
-  Eye,
-  EyeOff,
-  LayoutGrid,
-  Plus,
-  Settings,
-} from "lucide-vue-next";
-import { ClonningRequest } from "../services/basic/applicationBasic";
-import type { ClonningData } from "../services/basic/applicationBasic";
+import { ref, reactive, watch } from "vue";
+import { Link, Repeat, MapPin, FileInput, Workflow } from "lucide-vue-next";
+import { ClonningRequest, ClonningFormsInt } from "../services/fluigService";
+import type { ClonningData, Response, FormsIntData } from "../types/clonning";
 import { validateNumeric } from "../utils/validators";
-import Card from "../components/card.vue";
+import CardFeedBack from "../components/CardFeedBack.vue";
 
-interface CardItem {
-  component: any;
-  props: {
-    name: string;
-    id: string; // Ex: ID da solicitação conforme o log
-  };
-}
+import { Toaster, toast } from "vue-sonner";
+import "vue-sonner/style.css";
+import { Spinner } from "@/components/ui/spinner";
 
+// Solicitação
 const solicitacaoId = ref("");
 const urlSource = ref("");
-const userSource = ref("");
-const passSource = ref("");
-const type_pass = ref<boolean>(false);
 
-const ResponseTxt = ref<string>("");
-const Response = ref<boolean>(false);
+// Forms Int
+const documentId = ref("");
+const urlSourceDocument = ref("");
 
-const activeTab = ref("clone"); // Aba padrão
+const activeTab = ref("solicitacao"); // Aba padrão
 
-const arrayCards = ref<CardItem[]>([]);
-const newCardName = ref<string>("");
+const isResSolicitacao = ref<boolean>(false);
+const isResFormsInt = ref<boolean>(false);
+const res = reactive<Response>({
+  success: false,
+  newId: "",
+  processId: "",
+  date: "",
+  error: "",
+});
 
-const handleGenerate = () => {
+const isURLValid = ref<boolean>(true);
+
+const isLoading = ref<boolean>(false);
+
+const cloneRequest = () => {
   var data: ClonningData = {
     solicitacao_id: Number(solicitacaoId.value),
-    destination: getUrlBase(),
+    //destination: getUrlBase(),
+    destination:
+      "https://strategiconsultoria176588.fluig.cloudtotvs.com.br:2450",
     url_source: urlSource.value,
-    user_source: userSource.value,
-    pass_source: passSource.value,
   };
 
-  // campos de validação
-  var fields: any = [];
-  arrayCards.value.forEach((card) => {
-    fields.push(card.props.name);
-  });
+  isURLValid.value = validateURL(urlSource.value);
+  if (!isURLValid.value) return;
 
-  ClonningRequest(data, fields)
+  isLoading.value = true;
+  ClonningRequest(data)
     .then((response) => {
-      Response.value = true;
-      ResponseTxt.value = JSON.stringify(response, null, 2);
+      res.success = response.success;
+      res.newId = response.newId;
+      res.processId = response.processId;
+      res.date = response.date;
+      res.error = response.error;
+      // feedback com toast
+      if (response.success) {
+        isResSolicitacao.value = true;
+        toast.success("Solicitação clonada com sucesso");
+      }
+
+      if (response.error) {
+        isResSolicitacao.value = false;
+        toast.error(`Erro na solicitação: ${response.error}`);
+      }
     })
     .catch((error) => {
-      Response.value = true;
-      ResponseTxt.value = error.message;
+      res.error = error.message;
+      isResSolicitacao.value = false;
+    })
+    .finally(() => {
+      isLoading.value = false;
+    });
+};
+
+const cloneFormsInt = () => {
+  var data: FormsIntData = {
+    documentId: Number(documentId.value),
+    destination: getUrlBase(),
+    url_source: urlSourceDocument.value,
+  };
+
+  isLoading.value = true;
+  ClonningFormsInt(data)
+    .then((response) => {
+      res.success = response.success;
+      res.newId = response.newId;
+      res.processId = response.processId;
+      res.date = response.date;
+      res.error = response.error;
+      isResFormsInt.value = true;
+
+      // feedback com toast
+      if (response.success) {
+        toast.success("Solicitação clonada com sucesso");
+      }
+
+      if (response.error) {
+        toast.error(`Erro na solicitação: ${response.error}`);
+      }
+    })
+    .catch((error) => {
+      res.error = error.message;
+      isResFormsInt.value = false;
+    })
+    .finally(() => {
+      isLoading.value = false;
     });
 };
 
@@ -69,25 +113,31 @@ function getUrlBase() {
   return window.location.origin;
 }
 
-function addCard(name: string) {
-  arrayCards.value.push({
-    component: Card,
-    props: {
-      name: name,
-      id: `request_${Date.now()}`, // Exemplo de ID dinâmico
-    },
-  });
+function validateURL(url: string): boolean {
+  if (!url) return true;
+
+  const pattern = new RegExp(
+    "^(https?:\\/\\/)?" +
+      "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" +
+      "((\\d{1,3}\\.){3}\\d{1,3}))" +
+      "(\\:\\d+)?" +
+      "(\\/[-a-z\\d%_.~+]*)*" +
+      "(\\?[;&a-z\\d%_.~+=-]*)?" +
+      "(\\#[-a-z\\d_/]*)?$",
+    "i",
+  );
+
+  return pattern.test(url);
 }
 
-function removeCard(id: string) {
-  arrayCards.value = arrayCards.value.filter((card) => card.props.id !== id);
-}
-
-watch([solicitacaoId, urlSource], () => {
+watch([solicitacaoId, documentId, isResSolicitacao], () => {
   if (!validateNumeric(solicitacaoId.value)) {
     // se não for numero não deixa atualizar o valor
     solicitacaoId.value = solicitacaoId.value.replace(/\D/g, "");
+    documentId.value = documentId.value.replace(/\D/g, "");
   }
+
+  console.log("isResSolicitacao: ", isResSolicitacao.value);
 });
 </script>
 
@@ -111,191 +161,193 @@ watch([solicitacaoId, urlSource], () => {
         class="flex p-2 gap-2 bg-slate-50 rounded-t-[32px] border-b border-slate-100"
       >
         <button
-          @click="activeTab = 'clone'"
+          @click="activeTab = 'solicitacao'"
           :class="[
-            activeTab === 'clone'
+            activeTab === 'solicitacao'
               ? 'bg-white shadow-sm text-[#003087]'
               : 'text-slate-400 hover:text-slate-600',
           ]"
           class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all"
         >
-          <LayoutGrid class="w-4 h-4" />
-          Clonar
+          <Workflow class="w-4 h-4" />
+          Solicitação
         </button>
         <button
-          @click="activeTab = 'config'"
+          @click="activeTab = 'formsInt'"
           :class="[
-            activeTab === 'config'
+            activeTab === 'formsInt'
               ? 'bg-white shadow-sm text-[#003087]'
               : 'text-slate-400 hover:text-slate-600',
           ]"
           class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all"
         >
-          <Settings class="w-4 h-4" />
-          Configurações
+          <FileInput class="w-4 h-4" />
+          Forms Interno
         </button>
       </div>
-      <div class="p-10">
-        <!-- aba de clonagem -->
-        <div
-          v-if="activeTab === 'clone'"
-          class="space-y-8 animate-in fade-in duration-500"
-        >
-          <div class="shadow-slate-200/60">
-            <form @submit.prevent="handleGenerate" class="space-y-6">
-              <div class="w-full">
-                <label
-                  class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
-                >
-                  Solicitação ID
-                </label>
-                <input
-                  required="true"
-                  v-model="solicitacaoId"
-                  type="text"
-                  placeholder="Ex: 2941"
-                  class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
-                />
-              </div>
 
-              <div class="space-y-4">
-                <div
-                  class="flex items-center gap-2 text-[#002D72] font-bold mb-4"
-                >
-                  <MapPin class="w-4 h-4" />
-                  <span>Servidor de origem da Solicitação</span>
+      <!-- conteúdo solicitação -->
+      <div
+        v-if="activeTab === 'solicitacao'"
+        class="space-y-8 animate-in fade-in duration-500"
+      >
+        <div class="p-10">
+          <div class="space-y-8 animate-in fade-in duration-500">
+            <div class="shadow-slate-200/60">
+              <!-- formulario de clonagem -->
+              <form @submit.prevent="cloneRequest" class="space-y-6">
+                <!-- campo de solicitação id -->
+                <div class="w-full">
+                  <label
+                    class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
+                  >
+                    Solicitação ID
+                  </label>
+                  <input
+                    required="true"
+                    v-model="solicitacaoId"
+                    type="text"
+                    placeholder="Ex: 2941"
+                    class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
+                  />
                 </div>
 
-                <div>
-                  <label
-                    class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
-                    >URL</label
+                <div class="space-y-4">
+                  <div
+                    class="flex items-center gap-2 text-[#002D72] font-bold mb-4"
                   >
-                  <div class="relative">
-                    <Link
-                      class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                    <input
-                      required="true"
-                      v-model="urlSource"
-                      type="text"
-                      placeholder="https://source.com"
-                      class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
-                    />
+                    <MapPin class="w-4 h-4" />
+                    <span>Servidor de Produção da Solicitação</span>
                   </div>
-                </div>
 
-                <div>
-                  <label
-                    class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
-                    >Usuário</label
-                  >
-                  <div class="relative">
-                    <User
-                      class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                    <input
-                      required="true"
-                      v-model="userSource"
-                      type="text"
-                      placeholder="admin"
-                      class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
-                    >Senha</label
-                  >
-                  <div class="relative">
-                    <Lock
-                      class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                    <input
-                      required="true"
-                      v-model="passSource"
-                      placeholder="*********"
-                      :type="type_pass ? 'text' : 'password'"
-                      class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
-                    />
-                    <!-- visualização do pass -->
-                    <div
-                      @click="type_pass = !type_pass"
-                      class="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                  <!-- campo de url de destino -->
+                  <div>
+                    <label
+                      class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
+                      >URL</label
                     >
-                      <EyeOff v-if="type_pass" class="w-4 h-4" />
-                      <Eye v-else class="w-4 h-4" />
+                    <div class="relative">
+                      <Link
+                        class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
+                      <input
+                        :input="validateURL(urlSource)"
+                        required="true"
+                        v-model="urlSource"
+                        type="text"
+                        placeholder="https://source.com"
+                        :class="
+                          isURLValid ? 'border-slate-200' : 'border-red-500'
+                        "
+                        class="w-full pl-12 pr-5 py-3.5 bg-white border rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
+                      />
+                    </div>
+                    <div v-if="!isURLValid">
+                      <p class="text-sm mt-2 text-red-700">
+                        URL inválida ou inacessível
+                      </p>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                class="w-full bg-[#003087] hover:bg-[#00266b] text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 transition-all active:scale-[0.99] mt-8"
-              >
-                <Repeat class="w-4 h-4 text-slate-400" />
-                clonar solicitação
-              </button>
-            </form>
-
-            <div
-              v-if="Response"
-              class="mt-10 pt-10 border-t border-slate-50 space-y-4"
-            >
-              <label
-                class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest"
-                >Resposta Gerada</label
-              >
-              <div class="relative group">
-                <div
-                  class="w-full p-5 bg-[#F0F5FF] rounded-2xl border border-blue-100 font-mono text-sm text-[#3E5C9A] break-all pr-16 leading-relaxed"
+                <button
+                  :disabled="isLoading"
+                  type="submit"
+                  class="w-full bg-[#003087] hover:bg-[#00266b] text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 transition-all active:scale-[0.99] mt-8"
                 >
-                  {{ ResponseTxt }}
-                  <!-- apresentar mais detalhes do retorno -->
-                </div>
-              </div>
+                  <Repeat class="w-4 h-4 text-slate-400" v-if="!isLoading" />
+                  <Spinner v-if="isLoading" />
+                  {{ isLoading ? "Clonando..." : "Clonar solicitação" }}
+                </button>
+              </form>
+
+              <!-- Feedback -->
+              <Toaster
+                richColors
+                :closeButton="true"
+                closeButtonPosition="top-right"
+              />
+              <CardFeedBack v-if="isResSolicitacao" :res="res" />
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- aba de config -->
-        <div
-          v-if="activeTab === 'config'"
-          class="space-y-8 animate-in fade-in duration-500"
-        >
-          <div class="text-center">
-            <h2 class="text-lg font-bold text-[#002D72]">Adicionar campos</h2>
-            <p class="text-slate-500 text-sm mt-1">
-              Gerencie dinamicamente os campos que possuem valores únicos para
-              evitar registros duplicados.
-            </p>
-          </div>
+      <!-- conteúdo forms interno -->
+      <div
+        v-if="activeTab === 'formsInt'"
+        class="space-y-8 animate-in fade-in duration-500"
+      >
+        <div class="p-10">
+          <div class="space-y-8 animate-in fade-in duration-500">
+            <div class="shadow-slate-200/60">
+              <!-- formulario de clonagem -->
+              <form @submit.prevent="cloneFormsInt" class="space-y-6">
+                <!-- campo de solicitação id -->
+                <div class="w-full">
+                  <label
+                    class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
+                  >
+                    Document ID
+                  </label>
+                  <input
+                    required="true"
+                    v-model="documentId"
+                    type="text"
+                    placeholder="Ex: 2941"
+                    class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
+                  />
+                </div>
 
-          <div class="flex gap-3">
-            <input
-              v-model="newCardName"
-              type="text"
-              placeholder="Nome do Campo (ex: ID da Solicitação)"
-              class="flex-1 px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 transition-all text-sm"
-            />
-            <button
-              class="bg-[#002D72] hover:bg-[#001D4A] text-white px-6 py-3.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all"
-              @click="addCard(newCardName)"
-            >
-              <Plus class="w-4 h-4" /> Adicionar
-            </button>
-          </div>
+                <div class="space-y-4">
+                  <div
+                    class="flex items-center gap-2 text-[#002D72] font-bold mb-4"
+                  >
+                    <MapPin class="w-4 h-4" />
+                    <span>Servidor de Produção da Solicitação</span>
+                  </div>
 
-          <div class="space-y-4">
-            <div v-for="card in arrayCards" :key="card.props.id">
-              <Card
-                :name="card.props.name"
-                :id="card.props.id"
-                @remove="removeCard"
+                  <!-- campo de url de destino -->
+                  <div>
+                    <label
+                      class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
+                      >URL</label
+                    >
+                    <div class="relative">
+                      <Link
+                        class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
+                      <input
+                        required="true"
+                        :input="validateURL(urlSource)"
+                        v-model="urlSourceDocument"
+                        type="text"
+                        placeholder="https://source.com"
+                        class="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  :disabled="isLoading"
+                  type="submit"
+                  class="w-full bg-[#003087] hover:bg-[#00266b] text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 transition-all active:scale-[0.99] mt-8"
+                >
+                  <Repeat class="w-4 h-4 text-slate-400" />
+                  Clonar Forms interno
+                </button>
+              </form>
+
+              <!-- Feedback -->
+
+              <Toaster
+                richColors
+                :closeButton="true"
+                closeButtonPosition="top-right"
               />
+
+              <CardFeedBack v-if="isResFormsInt" :res="res" />
             </div>
           </div>
         </div>

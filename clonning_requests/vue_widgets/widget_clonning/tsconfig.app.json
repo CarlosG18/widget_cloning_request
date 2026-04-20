@@ -6,6 +6,11 @@
     "lib": ["ES2020", "DOM"],
     "types": ["vite/client"],
 
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
