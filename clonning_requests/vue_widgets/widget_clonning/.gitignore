@@ -1,24 +1,107 @@
+# =========================
+
+# Node / Vue
+
+# =========================
+
+node_modules/
+dist/
+build/
+.cache/
+.vite/
+*.local
+
 # Logs
-logs
+
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Env files
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+.env
+.env.*
+!.env.example
+
+# =========================
+
+# IDE / Sistema
+
+# =========================
+
+.vscode/
+.idea/
+*.swp
+*.swo
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+
+# =========================
+
+# Fluig
+
+# =========================
+
+# Exportações e backups
+
+*.zip
+*.rar
+*.7z
+
+# Diretórios comuns de export/import
+
+export/
+imports/
+backup/
+
+# Temp do Fluig
+
+temp/
+tmp/
+
+# Logs Fluig
+
+logs/
+fluig.log
+
+# Arquivos gerados no deploy
+
+.war
+*.ear
+
+# =========================
+
+# Build do Widget Vue
+
+# =========================
+
+# Caso você compile o widget
+
+dist-widget/
+public/build/
+public/dist/
+
+# Arquivos gerados pelo Vite/Webpack
+
+*.map
+
+# =========================
+
+# Testes
+
+# =========================
+
+coverage/
+
+# =========================
+
+# Outros
+
+# =========================
+
+*.pid
+*.seed
+*.pid.lock
