@@ -119,28 +119,39 @@ export async function getDataset(
 export async function getdatasetAuth(
   baseUrl: string,
   datasetId: string,
-  type_credentials: "STRATEGI" | "SEBRAE",
+  type_credentials: string,
   filters?: Filter[],
 ) {
-  const credentials = {
-    STRATEGI: {
-      consumer_key: import.meta.env.VITE_CONSUMER_KEY_STRATEGI_HML,
-      consumer_secret: import.meta.env.VITE_CONSUMER_SECRET_STRATEGI_HML,
-      access_token: import.meta.env.VITE_ACCESS_TOKEN_STRATEGI_HML,
-      token_secret: import.meta.env.VITE_TOKEN_SECRET_STRATEGI_HML,
-    },
-    SEBRAE: {
-      consumer_key: import.meta.env.VITE_CONSUMER_KEY_SEBRAERN_HML,
-      consumer_secret: import.meta.env.VITE_CONSUMER_SECRET_SEBRAERN_HML,
-      access_token: import.meta.env.VITE_ACCESS_TOKEN_SEBRAERN_HML,
-      token_secret: import.meta.env.VITE_TOKEN_SECRET_SEBRAERN_HML,
-    },
-  };
+  // Construir credentials dinamicamente baseado nas variáveis de ambiente
+  // const credentials: Record<
+  //   string,
+  //   {
+  //     consumer_key: string;
+  //     consumer_secret: string;
+  //     access_token: string;
+  //     token_secret: string;
+  //   }
+  // > = {};
+
+  // // Encontrar todas as chaves VITE_CONSUMER_KEY_*
+  // const consumerKeys = Object.keys(import.meta.env).filter((key) =>
+  //   key.startsWith("VITE_CONSUMER_KEY_"),
+  // );
+
+  // consumerKeys.forEach((key) => {
+  //   const suffix = key.replace("VITE_CONSUMER_KEY_", "");
+  //   credentials[suffix] = {
+  //     consumer_key: import.meta.env[key],
+  //     consumer_secret: import.meta.env[`VITE_CONSUMER_SECRET_${suffix}`],
+  //     access_token: import.meta.env[`VITE_ACCESS_TOKEN_${suffix}`],
+  //     token_secret: import.meta.env[`VITE_TOKEN_SECRET_${suffix}`],
+  //   };
+  // });
 
   const oauth = new OAuth({
     consumer: {
-      key: credentials[type_credentials].consumer_key,
-      secret: credentials[type_credentials].consumer_secret,
+      key: import.meta.env[`VITE_CONSUMER_KEY_${type_credentials}`],
+      secret: import.meta.env[`VITE_CONSUMER_SECRET_${type_credentials}`],
     },
     signature_method: "HMAC-SHA1",
     hash_function(base_string, key) {
@@ -149,8 +160,8 @@ export async function getdatasetAuth(
   });
 
   const token = {
-    key: credentials[type_credentials].access_token,
-    secret: credentials[type_credentials].token_secret,
+    key: import.meta.env[`VITE_ACCESS_TOKEN_${type_credentials}`],
+    secret: import.meta.env[`VITE_TOKEN_SECRET_${type_credentials}`],
   };
 
   const url = `${baseUrl}/fluighub/rest/service/execute/datasearchauth`;

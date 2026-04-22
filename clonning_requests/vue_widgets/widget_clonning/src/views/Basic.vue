@@ -15,6 +15,7 @@ const solicitacaoId = ref("");
 const urlSource = ref("");
 
 // Forms Int
+const isDevFormsInt = ref<boolean>(true);
 const documentId = ref("");
 const urlSourceDocument = ref("");
 
@@ -32,18 +33,56 @@ const res = reactive<Response>({
 
 const isURLValid = ref<boolean>(true);
 
+function humanizeServerLabel(suffix: string): string {
+  return suffix
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/(^|\s)\S/g, (match) => match.toUpperCase());
+}
+
+function getServerOptionsFromEnv() {
+  const consumerKeys = Object.keys(import.meta.env).filter((key) =>
+    key.startsWith("VITE_CONSUMER_KEY_"),
+  );
+
+  console.log("Consumer Keys encontradas: ", consumerKeys);
+
+  return consumerKeys
+    .map((key) => {
+      const suffix = key.replace("VITE_CONSUMER_KEY_", "");
+      console.log("Sufix: ", suffix);
+      return {
+        id: suffix,
+        label: humanizeServerLabel(suffix),
+        url: import.meta.env[`VITE_SERVER_${suffix}_URL`],
+      };
+    })
+    .filter((option) => option.url); // Apenas incluir se tiver URL definida
+}
+
+const serverOptions = getServerOptionsFromEnv();
+
+const selectedServer = ref<string>(serverOptions[0]?.id || "");
+const selectedServerUrl = ref<string>(serverOptions[0]?.url || "");
+
 const isLoading = ref<boolean>(false);
 
+const selectServer = (server: { id: string; label: string; url: string }) => {
+  selectedServer.value = server.id;
+  selectedServerUrl.value = server.url;
+};
+
 const cloneRequest = () => {
+  const effectiveUrlSource = selectedServerUrl.value || urlSource.value;
+
   var data: ClonningData = {
     solicitacao_id: Number(solicitacaoId.value),
-    //destination: getUrlBase(),
-    destination:
-      "https://strategiconsultoria176588.fluig.cloudtotvs.com.br:2450",
-    url_source: urlSource.value,
+    destination: getUrlBase(),
+    url_source: effectiveUrlSource,
+    servidor: selectedServer.value,
   };
 
-  isURLValid.value = validateURL(urlSource.value);
+  isURLValid.value = validateURL(effectiveUrlSource);
   if (!isURLValid.value) return;
 
   isLoading.value = true;
@@ -136,8 +175,6 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
     solicitacaoId.value = solicitacaoId.value.replace(/\D/g, "");
     documentId.value = documentId.value.replace(/\D/g, "");
   }
-
-  console.log("isResSolicitacao: ", isResSolicitacao.value);
 });
 </script>
 
@@ -147,7 +184,7 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
   >
     <!-- cabeçalho -->
     <div class="text-center mb-8">
-      <h1 class="text-3xl font-bold text-[#002D72] mb-2">Clonning Request</h1>
+      <h1 class="text-3xl font-bold text-[#002D72] mb-2">Cloning Request</h1>
       <p class="text-slate-500">
         Gerencie e clone solicitações entre servidores.
       </p>
@@ -220,8 +257,37 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
                     <span>Servidor de Produção da Solicitação</span>
                   </div>
 
+                  <!-- div para botões de seleção de servidor -->
+                  <div class="space-y-3 mb-4">
+                    <div class="flex flex-wrap gap-3">
+                      <button
+                        v-for="server in serverOptions"
+                        :key="server.id"
+                        type="button"
+                        @click="selectServer(server)"
+                        :class="[
+                          selectedServer === server.id
+                            ? 'bg-[#003087] text-white shadow-lg'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                          'rounded-2xl px-4 py-3 text-sm font-semibold transition-all',
+                        ]"
+                      >
+                        {{ server.label }}
+                      </button>
+                    </div>
+                    <p class="text-xs text-slate-500">
+                      Servidor selecionado:
+                      <span class="font-semibold text-slate-700">
+                        {{
+                          serverOptions.find((s) => s.id === selectedServer)
+                            ?.label
+                        }}
+                      </span>
+                    </p>
+                  </div>
+
                   <!-- campo de url de destino -->
-                  <div>
+                  <!-- <div>
                     <label
                       class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
                       >URL</label
@@ -247,7 +313,7 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
                         URL inválida ou inacessível
                       </p>
                     </div>
-                  </div>
+                  </div> -->
                 </div>
 
                 <button
@@ -282,7 +348,25 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
           <div class="space-y-8 animate-in fade-in duration-500">
             <div class="shadow-slate-200/60">
               <!-- formulario de clonagem -->
-              <form @submit.prevent="cloneFormsInt" class="space-y-6">
+              <div
+                v-if="isDevFormsInt"
+                class="rounded-[32px] border border-dashed border-slate-200 bg-slate-50 p-10 text-center"
+              >
+                <div
+                  class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-slate-200 text-slate-600"
+                >
+                  <span class="text-2xl">🚧</span>
+                </div>
+                <h2 class="text-xl font-bold text-slate-800 mb-2">
+                  Em desenvolvimento
+                </h2>
+                <p class="text-sm leading-6 text-slate-500 max-w-xl mx-auto">
+                  A funcionalidade de clonagem de Forms Interno ainda está sendo
+                  preparada. Em breve você poderá utilizar esse recurso para
+                  clonar documentos entre servidores.
+                </p>
+              </div>
+              <form v-else @submit.prevent="cloneFormsInt" class="space-y-6">
                 <!-- campo de solicitação id -->
                 <div class="w-full">
                   <label

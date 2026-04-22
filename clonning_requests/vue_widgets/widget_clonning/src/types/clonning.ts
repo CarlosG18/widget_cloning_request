@@ -2,6 +2,7 @@ export interface ClonningData {
   solicitacao_id: number;
   destination: string;
   url_source: string;
+  servidor: string;
 }
 
 export interface FormsIntData {
