@@ -13,7 +13,6 @@ function normalizeStringValue(value: string | number | boolean | null) {
   }
 
   let normalized = value;
-  console.log("Valor original: ", normalized);
 
   const fixByteDecode = (text: string) => {
     try {
@@ -66,8 +65,6 @@ export function transformarFields(array: FieldItem[]): FieldObject {
       obj[item.field] = normalizedValue as string | number | boolean;
     }
   }
-
-  console.log("obj: ", obj);
 
   return obj;
 }
