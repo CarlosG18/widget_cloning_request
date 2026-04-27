@@ -45,12 +45,9 @@ function getServerOptionsFromEnv() {
     key.startsWith("VITE_CONSUMER_KEY_"),
   );
 
-  console.log("Consumer Keys encontradas: ", consumerKeys);
-
   return consumerKeys
     .map((key) => {
       const suffix = key.replace("VITE_CONSUMER_KEY_", "");
-      console.log("Sufix: ", suffix);
       return {
         id: suffix,
         label: humanizeServerLabel(suffix),

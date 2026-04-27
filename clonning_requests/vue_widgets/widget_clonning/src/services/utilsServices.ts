@@ -103,7 +103,6 @@ export async function initProcess(
       return JSON.parse(res.message).processInstanceId;
     } catch (err) {
       retryCount++;
-      console.log(`Tentativa ${retryCount} falhou:`, err);
 
       if (retryCount < maxRetries) {
         if (retryCount === 1) {
@@ -114,12 +113,10 @@ export async function initProcess(
             type_credentials,
           );
         }
-        console.log(`Retentando... (${retryCount}/${maxRetries})`);
         // Aguardar um pouco antes de retentar (backoff)
         await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
         return executeRequest();
       } else {
-        console.log("Máximo de tentativas atingido");
         throw err;
       }
     }
@@ -169,7 +166,6 @@ export async function getDataset(
   try {
     const url = `${baseUrl}/fluighub/rest/service/execute/datasearch`;
 
-    console.log("URL: ", url);
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
