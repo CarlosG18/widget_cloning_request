@@ -149,6 +149,6 @@ export async function ClonningFormsInt(data: FormsIntData) {
     return resDataset;
   } catch (e: any) {
     console.error("erro completo:", e);
-    throw new Error("Erro na solicitação");
+    throw new Error(e?.message || "Erro na solicitação");
   }
 }

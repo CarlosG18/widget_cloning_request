@@ -13,7 +13,7 @@ function extractFirstAssignee(targetAssignee: string): string {
 }
 
 // Função para obter o primeiro usuário do servidor
-async function getFirstUserFromServer(
+export async function getFirstUserFromServer(
   baseUrl: string,
   type_credentials: string,
 ): Promise<string> {
@@ -27,6 +27,35 @@ async function getFirstUserFromServer(
     console.warn("Erro ao obter usuários do servidor:", err);
     return "";
   }
+}
+
+// Função auxiliar para extrair mensagens de erro
+function extractErrorMessage(
+  response?: Response,
+  res?: any,
+  fallback = "Erro na requisição",
+) {
+  const message = res?.message ?? res?.error ?? res?.detail;
+
+  if (typeof message === "string") {
+    try {
+      const parsedMessage = JSON.parse(message);
+      return (
+        parsedMessage?.message ||
+        parsedMessage?.error ||
+        parsedMessage?.detail ||
+        message
+      );
+    } catch {
+      return message;
+    }
+  }
+
+  if (message && typeof message === "object") {
+    return message.message || message.error || message.detail || fallback;
+  }
+
+  return response?.statusText || fallback;
 }
 
 export async function initProcess(
@@ -65,8 +94,10 @@ export async function initProcess(
       });
       const res: any = await response.json();
 
-      if (res.code != 200) {
-        throw new Error("Erro ao iniciar processo");
+      if (response.status !== 200 || res.code !== 200) {
+        throw new Error(
+          extractErrorMessage(response, res, "Erro ao iniciar o processo"),
+        );
       }
 
       return JSON.parse(res.message).processInstanceId;
@@ -78,7 +109,10 @@ export async function initProcess(
         if (retryCount === 1) {
           currentAssignee = "";
         } else if (retryCount === 2) {
-          currentAssignee = await getFirstUserFromServer(baseUrl, type_credentials);
+          currentAssignee = await getFirstUserFromServer(
+            baseUrl,
+            type_credentials,
+          );
         }
         console.log(`Retentando... (${retryCount}/${maxRetries})`);
         // Aguardar um pouco antes de retentar (backoff)
@@ -108,14 +142,14 @@ export async function encriptar(id_processo: string, baseUrl: string) {
 
     var res = await response.json();
 
-    if (res.code != 200) {
-      throw new Error("Erro em encriptar");
+    if (response.status !== 200 || res.code !== 200) {
+      throw new Error(extractErrorMessage(response, res, "Erro ao encriptar"));
     }
 
     return res.message;
   } catch (err) {
     console.log("Erro ao encriptar", err);
-    return null;
+    throw err;
   }
 }
 
@@ -143,12 +177,10 @@ export async function getDataset(
     });
     const res: any = await response.json();
 
-    if (response.status != 200) {
-      throw new Error("Erro ao buscar dados!");
-    }
-
-    if (res.code != 200) {
-      throw new Error("Erro ao buscar dados!");
+    if (response.status !== 200 || res.code !== 200) {
+      throw new Error(
+        extractErrorMessage(response, res, "Erro ao buscar dados"),
+      );
     }
 
     let resMessage = res.message;
@@ -163,7 +195,7 @@ export async function getDataset(
 
     return [];
   } catch (err) {
-    return [];
+    throw err;
   } finally {
   }
 }
@@ -219,7 +251,9 @@ export async function getdatasetAuth(
     const res: any = await response.json();
 
     if (response.status !== 200 || res.code !== 200) {
-      throw new Error("Erro ao buscar dados!");
+      throw new Error(
+        extractErrorMessage(response, res, "Erro ao buscar dados"),
+      );
     }
 
     let resMessage = res.message;
@@ -234,8 +268,6 @@ export async function getdatasetAuth(
     return [];
   } catch (err) {
     console.error("Erro OAuth Fetch: ", err);
-    return [];
+    throw err;
   }
 }
-
-
