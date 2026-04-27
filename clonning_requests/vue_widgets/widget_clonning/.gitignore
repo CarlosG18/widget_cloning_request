@@ -1,6 +1,6 @@
 # =========================
 
-# Node / Vue
+# Node / Vue (build e deps)
 
 # =========================
 
@@ -9,7 +9,14 @@ dist/
 build/
 .cache/
 .vite/
+output/
+out/
 *.local
+
+# Arquivos gerados por bundlers
+
+*.map
+*.tsbuildinfo
 
 # Logs
 
@@ -45,48 +52,47 @@ Thumbs.db
 
 # =========================
 
+# Ignorar toda a pasta WCM (widgets, layouts gerados, etc.)
+
+wcm/
+
 # Exportações e backups
 
 *.zip
 *.rar
 *.7z
 
-# Diretórios comuns de export/import
-
 export/
 imports/
 backup/
 
-# Temp do Fluig
+# Temp
 
 temp/
 tmp/
 
 # Logs Fluig
 
-logs/
 fluig.log
 
-# Arquivos gerados no deploy
+# Deploy
 
-.war
+*.war
 *.ear
 
 # =========================
 
-# Build do Widget Vue
+# Build específico de widgets
 
 # =========================
 
-# Caso você compile o widget
+# Saídas comuns ao rodar npm run build
 
 dist-widget/
 public/build/
 public/dist/
-
-# Arquivos gerados pelo Vite/Webpack
-
-*.map
+public/assets/
+assets/
 
 # =========================
 
@@ -105,3 +111,6 @@ coverage/
 *.pid
 *.seed
 *.pid.lock
+
+clonning_requests/wcm/widget/Clonning_widget/src/main/webapp/resources/js/*.js
+clonning_requests/wcm/widget/Clonning_widget/src/main/webapp/resources/js/*.css

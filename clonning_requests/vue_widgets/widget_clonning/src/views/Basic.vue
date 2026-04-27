@@ -1,10 +1,20 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from "vue";
-import { Link, Repeat, MapPin, FileInput, Workflow } from "lucide-vue-next";
+import {
+  Link,
+  Repeat,
+  MapPin,
+  FileInput,
+  Workflow,
+  Settings,
+  HelpCircle,
+  Save,
+} from "lucide-vue-next";
 import { ClonningRequest, ClonningFormsInt } from "../services/fluigService";
 import type { ClonningData, Response, FormsIntData } from "../types/clonning";
 import { validateNumeric } from "../utils/validators";
 import CardFeedBack from "../components/CardFeedBack.vue";
+import Help from "../components/Help.vue";
 
 import { Toaster, toast } from "vue-sonner";
 import "vue-sonner/style.css";
@@ -192,8 +202,9 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
     >
       <!-- abas -->
       <div
-        class="flex p-2 gap-2 bg-slate-50 rounded-t-[32px] border-b border-slate-100"
+        class="flex p-2 gap-2 bg-slate-50 rounded-[32px] border-b border-slate-100"
       >
+        <!-- Aba da Clonagem -->
         <button
           @click="activeTab = 'solicitacao'"
           :class="[
@@ -206,6 +217,8 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
           <Workflow class="w-4 h-4" />
           Solicitação
         </button>
+
+        <!-- Aba do Forms interno -->
         <button
           @click="activeTab = 'formsInt'"
           :class="[
@@ -217,6 +230,35 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
         >
           <FileInput class="w-4 h-4" />
           Forms Interno
+        </button>
+
+        <!-- Aba de Configurações -->
+        <!--          
+        <button
+          @click="activeTab = 'settings'"
+          :class="[
+            activeTab === 'settings'
+              ? 'bg-white shadow-sm text-[#003087]'
+              : 'text-slate-400 hover:text-slate-600',
+          ]"
+          class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all"
+        >
+          <Settings class="w-4 h-4" />
+          Configurações
+        </button> -->
+
+        <!-- Aba de Ajuda -->
+        <button
+          @click="activeTab = 'help'"
+          :class="[
+            activeTab === 'help'
+              ? 'bg-white shadow-sm text-[#003087]'
+              : 'text-slate-400 hover:text-slate-600',
+          ]"
+          class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all"
+        >
+          <HelpCircle class="w-4 h-4" />
+          Ajuda
         </button>
       </div>
 
@@ -272,45 +314,7 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
                         {{ server.label }}
                       </button>
                     </div>
-                    <!-- <p class="text-xs text-slate-500">
-                      Servidor selecionado:
-                      <span class="font-semibold text-slate-700">
-                        {{
-                          serverOptions.find((s) => s.id === selectedServer)
-                            ?.label
-                        }}
-                      </span>
-                    </p> -->
                   </div>
-
-                  <!-- campo de url de destino -->
-                  <!-- <div>
-                    <label
-                      class="block text-[10px] font-bold text-slate-400 uppercase mb-2"
-                      >URL</label
-                    >
-                    <div class="relative">
-                      <Link
-                        class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                      />
-                      <input
-                        :input="validateURL(urlSource)"
-                        required="true"
-                        v-model="urlSource"
-                        type="text"
-                        placeholder="https://source.com"
-                        :class="
-                          isURLValid ? 'border-slate-200' : 'border-red-500'
-                        "
-                        class="w-full pl-12 pr-5 py-3.5 bg-white border rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
-                      />
-                    </div>
-                    <div v-if="!isURLValid">
-                      <p class="text-sm mt-2 text-red-700">
-                        URL inválida ou inacessível
-                      </p>
-                    </div>
-                  </div> -->
                 </div>
 
                 <button
@@ -432,6 +436,132 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- conteúdo configurações -->
+      <div
+        v-if="activeTab === 'settings'"
+        class="space-y-8 animate-in fade-in duration-500"
+      >
+        <div class="p-10">
+          <div class="space-y-8 animate-in fade-in duration-500">
+            <div class="shadow-slate-200/60">
+              <!-- formulario de clonagem -->
+              <form @submit.prevent="cloneRequest" class="space-y-6">
+                <!-- header -->
+                <div
+                  class="flex items-center gap-2 text-[#002D72] font-bold mb-4"
+                >
+                  <Settings class="w-4 h-4" />
+                  <span>Configurações de Clonagem</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
+                    >
+                      CONSUMER_KEY
+                    </label>
+                    <input
+                      required="true"
+                      v-model="solicitacaoId"
+                      type="text"
+                      placeholder="Ex: 2941"
+                      class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
+                    >
+                      CONSUMER_SECRET
+                    </label>
+                    <input
+                      required="true"
+                      v-model="solicitacaoId"
+                      type="text"
+                      placeholder="Ex: 2941"
+                      class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
+                    >
+                      ACCESS_TOKEN
+                    </label>
+                    <input
+                      required="true"
+                      v-model="solicitacaoId"
+                      type="text"
+                      placeholder="Ex: 2941"
+                      class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
+                    >
+                      TOKEN_SECRET
+                    </label>
+                    <input
+                      required="true"
+                      v-model="solicitacaoId"
+                      type="text"
+                      placeholder="Ex: 2941"
+                      class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
+                    />
+                  </div>
+                </div>
+
+                <div class="w-full">
+                  <label
+                    class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
+                  >
+                    SERVER URL
+                  </label>
+                  <input
+                    required="true"
+                    v-model="solicitacaoId"
+                    type="text"
+                    placeholder="Ex: 2941"
+                    class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
+                  />
+                </div>
+
+                <!-- botão para salvar os dados -->
+                <button
+                  :disabled="isLoading"
+                  type="submit"
+                  class="w-full bg-[#003087] hover:bg-[#00266b] text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 transition-all active:scale-[0.99] mt-8"
+                >
+                  <Save class="w-4 h-4 text-slate-400" v-if="!isLoading" />
+                  <Spinner v-if="isLoading" />
+                  {{ isLoading ? "Salvando..." : "Salvar dados" }}
+                </button>
+              </form>
+
+              <!-- Feedback -->
+              <Toaster
+                richColors
+                :closeButton="true"
+                closeButtonPosition="top-right"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- conteúdo ajuda -->
+      <div
+        v-if="activeTab === 'help'"
+        class="space-y-8 animate-in fade-in duration-500"
+      >
+        <Help />
       </div>
     </div>
   </div>
