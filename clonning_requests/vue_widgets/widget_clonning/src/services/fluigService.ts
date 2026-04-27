@@ -62,6 +62,8 @@ export async function ClonningRequest(data: ClonningData) {
       throw new Error("Não foi possivel realizar o encrypto do id_processo");
     }
 
+    console.log("Params: ", params);
+
     // realizar o start process no endpoint do fluig de homologação
     const newId = await initProcess(
       urlbase,
@@ -69,6 +71,7 @@ export async function ClonningRequest(data: ClonningData) {
       params.targetAssignee,
       transformarFields(params.formFields.formFields),
       encryptedProcessId,
+      data.servidor,
     );
 
     if (!newId || newId.length === 0) {

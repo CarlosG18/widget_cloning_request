@@ -2,44 +2,96 @@ import type { Filter } from "../types/clonning";
 import OAuth from "oauth-1.0a";
 import CryptoJS from "crypto-js";
 
+// Extrai o primeiro assignee de uma lista separada por vírgula
+function extractFirstAssignee(targetAssignee: string): string {
+  if (!targetAssignee || typeof targetAssignee !== "string") {
+    return "";
+  }
+
+  const firstAssignee = targetAssignee.split(",")[0].trim();
+  return firstAssignee;
+}
+
+// Função para obter o primeiro usuário do servidor
+async function getFirstUserFromServer(
+  baseUrl: string,
+  type_credentials: string,
+): Promise<string> {
+  try {
+    const users = await getdatasetAuth(baseUrl, "colleague", type_credentials);
+    if (users && users.length > 0) {
+      return users[0].login || users[0].colleagueName || "";
+    }
+    return "";
+  } catch (err) {
+    console.warn("Erro ao obter usuários do servidor:", err);
+    return "";
+  }
+}
+
 export async function initProcess(
   baseUrl: string,
   targetState: Number,
   targetAssignee: string,
   formFields: any,
   codProcess: string,
+  type_credentials: string,
 ) {
-  const date = new Date().toISOString().split("T")[0];
-  const time = new Date().toISOString().split("T")[1];
+  const maxRetries = 3;
+  let retryCount = 0;
+  let currentAssignee = extractFirstAssignee(targetAssignee);
 
-  const body = {
-    endpoint: "start",
-    method: "post",
-    params: JSON.stringify({
-      targetState: targetState,
-      targetAssignee: targetAssignee, // trocar para o grupo correto quando subir para produção
-      comment: `Clonagem Realizada - por widget clonning requests - ${date} ${time}`,
-      formFields: formFields,
-    }),
-    process: codProcess,
+  const executeRequest = async (): Promise<string | undefined> => {
+    try {
+      const date = new Date().toISOString().split("T")[0];
+      const time = new Date().toISOString().split("T")[1];
+
+      const body = {
+        endpoint: "start",
+        method: "post",
+        params: JSON.stringify({
+          targetState: targetState,
+          targetAssignee: currentAssignee,
+          comment: `Clonagem Realizada - por widget clonning requests - ${date} ${time}`,
+          formFields: formFields,
+        }),
+        process: codProcess,
+      };
+
+      const url = `${baseUrl}/fluighub/rest/service/execute/movestart-process`;
+      const response = await fetch(url, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      const res: any = await response.json();
+
+      if (res.code != 200) {
+        throw new Error("Erro ao iniciar processo");
+      }
+
+      return JSON.parse(res.message).processInstanceId;
+    } catch (err) {
+      retryCount++;
+      console.log(`Tentativa ${retryCount} falhou:`, err);
+
+      if (retryCount < maxRetries) {
+        if (retryCount === 1) {
+          currentAssignee = "";
+        } else if (retryCount === 2) {
+          currentAssignee = await getFirstUserFromServer(baseUrl, type_credentials);
+        }
+        console.log(`Retentando... (${retryCount}/${maxRetries})`);
+        // Aguardar um pouco antes de retentar (backoff)
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+        return executeRequest();
+      } else {
+        console.log("Máximo de tentativas atingido");
+        throw err;
+      }
+    }
   };
 
-  try {
-    const url = `${baseUrl}/fluighub/rest/service/execute/movestart-process`;
-    const response = await fetch(url, {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
-    const res: any = await response.json();
-
-    if (res.code != 200) {
-      throw new Error("Erro ao carregar o arquivo");
-    }
-
-    return JSON.parse(res.message).processInstanceId;
-  } catch (err) {
-    console.log(err);
-  }
+  return executeRequest();
 }
 
 export async function encriptar(id_processo: string, baseUrl: string) {
@@ -122,32 +174,6 @@ export async function getdatasetAuth(
   type_credentials: string,
   filters?: Filter[],
 ) {
-  // Construir credentials dinamicamente baseado nas variáveis de ambiente
-  // const credentials: Record<
-  //   string,
-  //   {
-  //     consumer_key: string;
-  //     consumer_secret: string;
-  //     access_token: string;
-  //     token_secret: string;
-  //   }
-  // > = {};
-
-  // // Encontrar todas as chaves VITE_CONSUMER_KEY_*
-  // const consumerKeys = Object.keys(import.meta.env).filter((key) =>
-  //   key.startsWith("VITE_CONSUMER_KEY_"),
-  // );
-
-  // consumerKeys.forEach((key) => {
-  //   const suffix = key.replace("VITE_CONSUMER_KEY_", "");
-  //   credentials[suffix] = {
-  //     consumer_key: import.meta.env[key],
-  //     consumer_secret: import.meta.env[`VITE_CONSUMER_SECRET_${suffix}`],
-  //     access_token: import.meta.env[`VITE_ACCESS_TOKEN_${suffix}`],
-  //     token_secret: import.meta.env[`VITE_TOKEN_SECRET_${suffix}`],
-  //   };
-  // });
-
   const oauth = new OAuth({
     consumer: {
       key: import.meta.env[`VITE_CONSUMER_KEY_${type_credentials}`],
@@ -211,3 +237,5 @@ export async function getdatasetAuth(
     return [];
   }
 }
+
+

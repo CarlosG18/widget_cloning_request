@@ -275,7 +275,7 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
                         {{ server.label }}
                       </button>
                     </div>
-                    <p class="text-xs text-slate-500">
+                    <!-- <p class="text-xs text-slate-500">
                       Servidor selecionado:
                       <span class="font-semibold text-slate-700">
                         {{
@@ -283,7 +283,7 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
                             ?.label
                         }}
                       </span>
-                    </p>
+                    </p> -->
                   </div>
 
                   <!-- campo de url de destino -->
