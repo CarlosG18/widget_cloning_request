@@ -12,6 +12,7 @@ import {
   UploadAnexo,
   createFolder,
   attachDocument,
+  getAttachUserInfo,
 } from "./utilsServices";
 
 import { transformarFields } from "../utils/formatFormFields";
@@ -109,17 +110,16 @@ export async function ClonningRequest(
           anexosConfigs.push(configsAnexo);
         }
 
-        // fazer o upload dos anexos no processo
-        for (let i = 0; i < anexosConfigs.length; i++) {
-          const configsAnexo = anexosConfigs[i];
-          await attachDocument(
-            configsAnexo.documentId,
-            Number(newId),
-            configsAnexo.userInfo,
-            params.processID,
-            urlbase,
-          );
-        }
+        const userInfo = await getAttachUserInfo(urlbase, data.servidor);
+        console.log("Configurações dos anexos após upload:", anexosConfigs);
+
+        await attachDocument(
+          Number(newId),
+          userInfo,
+          params.processID,
+          urlbase,
+          anexosConfigs,
+        );
       }
     }
 

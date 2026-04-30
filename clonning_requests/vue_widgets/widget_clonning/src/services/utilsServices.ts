@@ -1,5 +1,9 @@
 import type { Filter } from "../types/clonning";
-import type { UploadAnexoParams, AttachUserInfo } from "../types/clonning";
+import type {
+  UploadAnexoParams,
+  AttachUserInfo,
+  AttachDocumentParams,
+} from "../types/clonning";
 import {
   createPdfFileFromBase64,
   ensurePdfFileName,
@@ -290,7 +294,7 @@ async function parseServiceResponse(response: Response) {
   }
 }
 
-async function getAttachUserInfo(
+export async function getAttachUserInfo(
   baseUrl: string,
   type_credentials?: string,
 ): Promise<AttachUserInfo> {
@@ -364,6 +368,7 @@ export async function UploadAnexo(
     );
 
     const uploadResult: any = await parseServiceResponse(uploadResponse);
+    console.log("Resposta do upload:", uploadResult);
 
     if (
       !uploadResponse.ok ||
@@ -394,13 +399,32 @@ export async function UploadAnexo(
 }
 
 export async function attachDocument(
-  documentId: string | number,
   processInstanceId: string | number,
   userInfo: AttachUserInfo,
   processId: string | number,
   baseUrl = window.location.origin,
+  anexos: AttachDocumentParams[],
 ) {
   const normalizedFileName = ensurePdfFileName(userInfo.attachedUser);
+
+  const attachments = [];
+
+  for (let i = 0; i < anexos.length; i++) {
+    const anexo = anexos[i];
+    attachments.push({
+      name: anexo.fileName,
+      newAttach: true,
+      description: anexo.fileName,
+      documentId: anexo.documentId,
+      attachedUser: userInfo.attachedUser,
+      attachments: [
+        {
+          principal: true,
+          fileName: anexo.fileName,
+        },
+      ],
+    });
+  }
 
   const attachPayload = {
     processId: processId,
@@ -410,21 +434,7 @@ export async function attachDocument(
     processInstanceId: Number(processInstanceId),
     isDigitalSigned: false,
     selectedState: null,
-    attachments: [
-      {
-        name: normalizedFileName,
-        newAttach: true,
-        description: normalizedFileName,
-        documentId: documentId,
-        attachedUser: userInfo.attachedUser,
-        attachments: [
-          {
-            principal: true,
-            fileName: normalizedFileName,
-          },
-        ],
-      },
-    ],
+    attachments: attachments,
     currentMovto: null,
   };
 

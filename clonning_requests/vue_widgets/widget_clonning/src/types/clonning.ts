@@ -43,3 +43,9 @@ export type AttachUserInfo = {
   taskUserId: string;
   attachedUser: string;
 };
+
+export type AttachDocumentParams = {
+  success: boolean;
+  documentId: string | number;
+  fileName: string;
+};
