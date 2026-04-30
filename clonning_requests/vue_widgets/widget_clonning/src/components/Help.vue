@@ -13,7 +13,7 @@ const requirements = [
 ];
 
 const comments = [
-  "Caso o usuario tenha marcado a opção de capturar anexos, o widget irá realizar o upload dos anexos no GED, na pasta -> Formulários Fluig/<processId>/<processInstance>/.",
+  "Caso o usuario tenha marcado a opção de capturar anexos, o widget irá realizar o upload dos anexos no GED, na pasta -> Formulários Fluig/processId/processInstance/.",
 ];
 
 const datasetFields = [
