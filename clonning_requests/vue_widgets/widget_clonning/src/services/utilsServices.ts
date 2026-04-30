@@ -267,3 +267,210 @@ export async function getdatasetAuth(
     throw err;
   }
 }
+
+type UploadAnexoParams = {
+  documentId: string | number;
+  fileName: string;
+  base64: string;
+};
+
+type AttachUserInfo = {
+  taskUserId: string;
+  attachedUser: string;
+};
+
+function normalizeBase64Content(base64: string): string {
+  return base64.replace(/^data:application\/pdf;base64,/, "").trim();
+}
+
+function ensurePdfFileName(fileName: string): string {
+  if (!fileName) {
+    return "anexo.pdf";
+  }
+
+  return fileName.toLowerCase().endsWith(".pdf") ? fileName : `${fileName}.pdf`;
+}
+
+function createPdfFileFromBase64(base64: string, fileName: string): File {
+  const normalizedBase64 = normalizeBase64Content(base64);
+  const byteCharacters = atob(normalizedBase64);
+  const byteNumbers = new Array(byteCharacters.length);
+
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+
+  const byteArray = new Uint8Array(byteNumbers);
+  const blob = new Blob([byteArray], { type: "application/pdf" });
+
+  return new File([blob], ensurePdfFileName(fileName), {
+    type: "application/pdf",
+  });
+}
+
+async function parseServiceResponse(response: Response) {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    return response.json();
+  }
+
+  const text = await response.text();
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+async function getAttachUserInfo(
+  baseUrl: string,
+  type_credentials?: string,
+): Promise<AttachUserInfo> {
+  const fluigWindow = window as Window & {
+    WCMAPI?: {
+      userCode?: string;
+      user?: string;
+    };
+  };
+
+  const userCode = fluigWindow.WCMAPI?.userCode || "";
+  const userName = fluigWindow.WCMAPI?.user || "";
+
+  if (userCode) {
+    return {
+      taskUserId: userCode,
+      attachedUser: userName || userCode,
+    };
+  }
+
+  if (type_credentials) {
+    const users = await getdatasetAuth(baseUrl, "colleague", type_credentials);
+    const firstUser = users?.[0];
+
+    if (firstUser) {
+      return {
+        taskUserId: firstUser.login || firstUser.colleaguePK?.colleagueId || "",
+        attachedUser:
+          firstUser.colleagueName ||
+          firstUser.mail ||
+          firstUser.login ||
+          "Usuário Fluig",
+      };
+    }
+  }
+
+  throw new Error("Não foi possível identificar o usuário do Fluig");
+}
+
+export async function UploadAnexo(
+  anexo: UploadAnexoParams,
+  processInstanceId: string | number,
+  baseUrl = window.location.origin,
+  type_credentials?: string,
+) {
+  try {
+    if (!anexo?.base64) {
+      throw new Error("O anexo informado não possui conteúdo em base64");
+    }
+
+    if (!processInstanceId) {
+      throw new Error("processInstanceId não informado");
+    }
+
+    const pdfFile = createPdfFileFromBase64(anexo.base64, anexo.fileName);
+    const normalizedFileName = ensurePdfFileName(anexo.fileName);
+    const userInfo = await getAttachUserInfo(baseUrl, type_credentials);
+
+    const uploadFormData = new FormData();
+    uploadFormData.append("file", pdfFile);
+    uploadFormData.append("fileName", normalizedFileName);
+
+    const uploadResponse = await fetch(
+      `${baseUrl}/fluighub/rest/service/execute/uploadanexo`,
+      {
+        method: "POST",
+        body: uploadFormData,
+      },
+    );
+
+    const uploadResult: any = await parseServiceResponse(uploadResponse);
+
+    if (
+      !uploadResponse.ok ||
+      (typeof uploadResult?.code !== "undefined" && uploadResult.code !== 200)
+    ) {
+      throw new Error(
+        extractErrorMessage(
+          uploadResponse,
+          uploadResult,
+          "Erro ao enviar o anexo para upload",
+        ),
+      );
+    }
+
+    const attachPayload = {
+      processId: null,
+      version: -1,
+      managerMode: false,
+      taskUserId: userInfo.taskUserId,
+      processInstanceId: Number(processInstanceId),
+      isDigitalSigned: false,
+      selectedState: null,
+      attachments: [
+        {
+          name: normalizedFileName,
+          newAttach: true,
+          description: normalizedFileName,
+          documentId: Number(anexo.documentId) || 0,
+          attachedUser: userInfo.attachedUser,
+          attachments: [
+            {
+              principal: true,
+              fileName: normalizedFileName,
+            },
+          ],
+        },
+      ],
+      currentMovto: null,
+    };
+
+    const attachResponse = await fetch(
+      `${baseUrl}/fluighub/rest/service/execute/attach`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(attachPayload),
+      },
+    );
+
+    const attachResult: any = await parseServiceResponse(attachResponse);
+
+    if (
+      !attachResponse.ok ||
+      (typeof attachResult?.code !== "undefined" && attachResult.code !== 200)
+    ) {
+      throw new Error(
+        extractErrorMessage(
+          attachResponse,
+          attachResult,
+          "Erro ao anexar documento ao processo",
+        ),
+      );
+    }
+
+    return {
+      success: true,
+      upload: uploadResult,
+      attach: attachResult,
+      fileName: normalizedFileName,
+      processInstanceId: Number(processInstanceId),
+    };
+  } catch (err) {
+    console.error("Erro ao realizar upload do anexo:", err);
+    throw err;
+  }
+}

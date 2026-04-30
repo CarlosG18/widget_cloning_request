@@ -14,8 +14,10 @@ function createDataset(fields, constraints, sorts) {
   dataset.addColumn("targetState");
   dataset.addColumn("targetAssignee");
   dataset.addColumn("formsFields");
+  dataset.addColumn("processID");
+  dataset.addColumn("anexos");
 
-  var processInstanceId = "";
+  var processInstanceId = null;
 
   for (var i = 0; i < constraints.length; i++) {
     if (constraints[i].fieldName == "processInstanceId") {
@@ -23,35 +25,34 @@ function createDataset(fields, constraints, sorts) {
     }
   }
 
-  if (!processInstanceId || processInstanceId == "") {
-    return dataset;
-  }
-
   try {
-    var formFields = getFormsFields(processInstanceId);
+    var formsData = getFormsFields(processInstanceId);
+    var formFields = formsData[0];
+    var processID = formsData[1];
+
     var formFieldsStr = JSON.stringify(formFields || []);
 
-    var targetState = "não encontrado";
+    var targetState = 0;
     var targetAssignee = "não encontrado";
 
     var c1 = DatasetFactory.createConstraint(
       "processHistoryPK.processInstanceId",
       processInstanceId,
       processInstanceId,
-      ConstraintType.MUST,
+      ConstraintType.MUST
     );
     var c2 = DatasetFactory.createConstraint(
       "active",
       "true",
       "true",
-      ConstraintType.MUST,
+      ConstraintType.MUST
     );
 
     var dataset_processHistory = DatasetFactory.getDataset(
       "processHistory",
       null,
       [c1, c2],
-      null,
+      null
     );
 
     if (
@@ -65,14 +66,14 @@ function createDataset(fields, constraints, sorts) {
       "choosedSequence",
       targetState,
       targetState,
-      ConstraintType.MUST,
+      ConstraintType.MUST
     );
 
     var c4 = DatasetFactory.createConstraint(
       "processTaskPK.processInstanceId",
       processInstanceId,
       processInstanceId,
-      ConstraintType.MUST,
+      ConstraintType.MUST
     );
 
     var constraint = new Array(c3, c4);
@@ -81,26 +82,64 @@ function createDataset(fields, constraints, sorts) {
       "processTask",
       null,
       constraint,
-      null,
+      null
     );
 
     if (dataset_processTask != null && dataset_processTask.getRowsCount() > 0) {
-      targetAssignee = dataset_processTask.getValue(0, "choosedColleagueId");
+      targetAssignee = dataset_processTask.getValue(
+        0,
+        "processTaskPK.colleagueId"
+      );
     }
+
+    //obtendo anexos
+    var c_anexos = DatasetFactory.createConstraint(
+      "processInstanceId",
+      processInstanceId,
+      processInstanceId,
+      ConstraintType.MUST
+    );
+    var anexos = DatasetFactory.getDataset(
+      "dsGetAxenosFromSolicitacao",
+      null,
+      [c_anexos],
+      null
+    );
+
+    log.info("Número de anexos: " + anexos.getRowsCount());
+
+    // Convertendo Dataset de anexos para array de objetos de string
+    var anexosArray = [];
+    if (anexos != null && anexos.getRowsCount() > 0) {
+      for (var i = 0; i < anexos.getRowsCount(); i++) {
+        var documentId = anexos.getValue(i, "documentId") || "";
+        var fileName = anexos.getValue(i, "fileName") || "";
+        var base64 = anexos.getValue(i, "base64") || "";
+
+        var anexoObj = {
+          documentId: documentId + "",
+          fileName: fileName + "",
+          base64: base64 + ""
+        };
+
+        anexosArray.push(anexoObj);
+      }
+    }
+
+    log.info("anexosArray ->>>>>" + JSON.stringify(anexosArray));
 
     dataset.addRow([
       processInstanceId,
       targetState,
       targetAssignee,
       formFieldsStr,
+      processID,
+      JSON.stringify(anexosArray || [])
     ]);
 
     return dataset;
   } catch (e) {
-    log.error(
-      ">>> Erro no Dataset dsGetParams (ID: " + processInstanceId + "): " + e,
-    );
-    dataset.addRow([processInstanceId, "Erro", e.toString(), "[]"]);
+    dataset.addRow([processInstanceId, "Erro", e.toString(), "[]", ""]);
   }
 }
 
@@ -121,7 +160,7 @@ function getFormsFields(processInstanceId) {
     timeoutService: "100",
     headers: {
       "Content-Type": "application/json",
-    },
+    }
   };
 
   try {
@@ -134,7 +173,7 @@ function getFormsFields(processInstanceId) {
 
     if (result.message) throw result.message;
 
-    return result.formFields || [];
+    return [result, result.processId] || [];
   } catch (e) {
     log.error(">>> Erro em getFormsFields: " + e);
     return [];

@@ -1,5 +1,8 @@
 <script setup>
-import { Check, Database } from "lucide-vue-next";
+import { Check, Database, AlertTriangle, Copy } from "lucide-vue-next";
+import { ref } from "vue";
+import { Toaster, toast } from "vue-sonner";
+import "vue-sonner/style.css";
 
 const requirements = [
   "O dataset <strong class='text-slate-800 font-bold'>dsGetParamsClone</strong> deve estar disponível no servidor onde será puxado a solicitação.",
@@ -16,18 +19,37 @@ const datasetFields = [
   { type: "data", name: "formFields" },
   { type: "id", name: "processId" },
 ];
+
+const copyStatus = ref("Copiar");
+
+const envVariables = `VITE_CONSUMER_KEY_<NOME DO SERVIDOR>=***\nVITE_CONSUMER_SECRET_<NOME DO SERVIDOR>=***\nVITE_ACCESS_TOKEN_<NOME DO SERVIDOR>=***\nVITE_TOKEN_SECRET_<NOME DO SERVIDOR>=***\nVITE_SERVER_<NOME DO SERVIDOR>_URL=***`;
+
+async function copyEnvExample() {
+  try {
+    await navigator.clipboard.writeText(envVariables);
+    copyStatus.value = "Copiado";
+    setTimeout(() => {
+      copyStatus.value = "Copiar";
+    }, 1200);
+    toast.success("Copiado para a área de transferência");
+  } catch (error) {
+    console.error("Não foi possível copiar para o clipboard:", error);
+    toast.error("Não foi possível copiar para a área de transferência");
+  }
+}
 </script>
 
 <template>
-  <div class="p-8 flex flex-col justify-center font-sans">
+  <div class="w-full p-8 flex flex-col justify-center font-sans">
     <!-- como informar os dados para a autenticação oauth -->
     <div class="flex items-center gap-3 mb-8 ml-2">
       <div class="w-1.5 h-8 bg-[#002d5e] rounded-full"></div>
-      <h2 class="text-2xl font-bold text-[#002d5e]">Como usar o widget</h2>
+      <h2 class="text-xl font-bold text-[#002d5e]">Como usar o widget</h2>
     </div>
 
+    <!-- elemento de selecao de servidor -->
     <div
-      class="max-w-4xl bg-white rounded-[2rem] border border-slate-100 p-10 shadow-sm mb-8"
+      class="w-full h-full flex flex-col bg-white rounded-[2rem] border border-slate-100 p-10 shadow-sm mb-8"
     >
       <p class="text-slate-700 text-sm mb-8 leading-relaxed">
         Os botões de escolha do servidores são preenchidos automaticamente a
@@ -36,22 +58,17 @@ const datasetFields = [
 
       <div class="relative bg-[#001a3d] rounded-2xl p-8 mb-8 group">
         <button
-          class="absolute top-4 right-4 p-2 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg transition-colors"
+          type="button"
+          @click="copyEnvExample"
+          class="absolute top-4 right-4 p-2 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg transition-colors cursor-pointer"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5 text-slate-300"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-            />
-          </svg>
+          <Toaster
+            richColors
+            :closeButton="true"
+            closeButtonPosition="bottom-right"
+            position="top-center"
+          />
+          <Copy class="w-4 h-4 text-white" />
         </button>
 
         <code class="block font-mono text-sm text-slate-300 leading-loose">
@@ -74,55 +91,50 @@ const datasetFields = [
       </div>
 
       <div
-        class="bg-[#f0f5ff] border-l-4 border-[#002d5e] rounded-xl p-5 flex items-center gap-4"
+        class="bg-[#f0f5ff] border-l-4 border-[#002d5e] rounded-xl p-5 flex items-center gap-4 mb-8"
       >
         <div class="text-[#002d5e] flex-shrink-0">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-6 w-6"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
-            <path
-              d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM11 16h2v2h-2zm0-6h2v4h-2z"
-            />
-          </svg>
+          <AlertTriangle class="w-4 h-4" />
         </div>
         <p class="text-slate-700 text-sm font-medium">
           portanto, para utilizar o widget, você precisa ter as variáveis de
           ambiente definidas.
         </p>
       </div>
-    </div>
 
-    <div class="bg-white rounded-3xl border border-blue-100 p-8 shadow-sm mb-8">
-      <div class="flex items-center gap-3 mb-8">
-        <div class="text-blue-900">
-          <Check class="w-4 h-4" />
-        </div>
-        <h2 class="text-xl font-bold text-slate-800">
-          Para funcionar corretamente:
-        </h2>
-      </div>
-
-      <ul class="space-y-6">
-        <li
-          v-for="(item, index) in requirements"
-          :key="index"
-          class="flex gap-4"
-        >
-          <div
-            class="flex-shrink-0 w-8 h-8 bg-[#1e3a8a] text-white rounded-full flex items-center justify-center font-bold text-sm"
-          >
-            {{ index + 1 }}
+      <!-- elemento de lista de requisitos -->
+      <div
+        class="w-full bg-white rounded-3xl border border-blue-100 p-8 shadow-sm h-full flex flex-col"
+      >
+        <div class="flex items-center gap-3 mb-8">
+          <div class="text-blue-900">
+            <Check class="w-4 h-4" />
           </div>
-          <p class="text-slate-600 leading-relaxed text-sm">
-            <span v-html="item"></span>
-          </p>
-        </li>
-      </ul>
+          <h2 class="text-xl font-bold text-slate-800">
+            Para funcionar corretamente:
+          </h2>
+        </div>
+
+        <ul class="space-y-6">
+          <li
+            v-for="(item, index) in requirements"
+            :key="index"
+            class="flex gap-4"
+          >
+            <div
+              class="flex-shrink-0 w-8 h-8 bg-[#1e3a8a] text-white rounded-full flex items-center justify-center font-bold text-sm"
+            >
+              {{ index + 1 }}
+            </div>
+            <p class="text-slate-600 leading-relaxed text-sm">
+              <span v-html="item"></span>
+            </p>
+          </li>
+        </ul>
+      </div>
     </div>
 
+    <!-- elemento de descricao do dataset -->
     <div
       class="bg-[#f0f5ff] rounded-3xl border border-blue-100 p-8 shadow-sm flex-1"
     >
@@ -165,5 +177,14 @@ const datasetFields = [
 <style scoped>
 code {
   font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+  background-color: #001a3d !important;
+  color: #f0f5ff !important;
+  border-color: #001a3d !important;
+}
+
+.two-column-layout {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 1rem !important;
 }
 </style>

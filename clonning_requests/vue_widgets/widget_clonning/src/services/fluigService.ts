@@ -9,6 +9,7 @@ import {
   initProcess,
   getdatasetAuth,
   getDataset,
+  UploadAnexo,
 } from "./utilsServices";
 
 import { transformarFields } from "../utils/formatFormFields";
@@ -44,6 +45,8 @@ export async function ClonningRequest(data: ClonningData) {
       throw new Error("Não foi possivel acessar o dataset com autenticação");
     }
 
+    console.log("Anexos para upload:", resDataset[0].anexos);
+
     // criando os parametros para a função de start process
     const params: Params = {
       processID: resDataset[0].processID,
@@ -72,14 +75,20 @@ export async function ClonningRequest(data: ClonningData) {
       data.servidor,
     );
 
-    if (!newId || newId.length === 0) {
-      throw new Error("Não foi possivel iniciar o processo");
+    // anexar documentos no processo iniciado
+    const anexos = JSON.parse(resDataset[0].anexos);
+    console.log("Anexos:", anexos);
+    if (anexos && anexos.length > 0) {
+      for (const anexo of anexos) {
+        console.log("Dados do anexo:", anexo);
+        await UploadAnexo(anexo, Number(newId), urlbase, data.servidor);
+      }
     }
 
     // data
     const dataAtual = new Date();
 
-    retorno.newId = newId;
+    retorno.newId = String(newId);
     retorno.processId = params.processID;
     retorno.date = dataAtual.toISOString();
     retorno.success = true;

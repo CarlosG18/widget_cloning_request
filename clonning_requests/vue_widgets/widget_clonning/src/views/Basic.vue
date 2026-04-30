@@ -8,7 +8,7 @@ import {
   Workflow,
   Settings,
   HelpCircle,
-  Save,
+  //,
 } from "lucide-vue-next";
 import { ClonningRequest, ClonningFormsInt } from "../services/fluigService";
 import type { ClonningData, Response, FormsIntData } from "../types/clonning";
@@ -28,6 +28,9 @@ const urlSource = ref("");
 const isDevFormsInt = ref<boolean>(true);
 const documentId = ref("");
 const urlSourceDocument = ref("");
+
+// variaveis de configuração
+// const isCaptureAttachments = ref<boolean>(true);
 
 const activeTab = ref("solicitacao"); // Aba padrão
 
@@ -198,7 +201,7 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
     </div>
 
     <div
-      class="w-full max-w-2xl bg-white rounded-[32px] shadow-2xl p-1 shadow-slate-200/60 border border-slate-100"
+      class="w-full bg-white rounded-[32px] shadow-2xl p-1 shadow-slate-200/60 border border-slate-100"
     >
       <!-- abas -->
       <div
@@ -233,7 +236,6 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
         </button>
 
         <!-- Aba de Configurações -->
-        <!--          
         <button
           @click="activeTab = 'settings'"
           :class="[
@@ -245,7 +247,7 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
         >
           <Settings class="w-4 h-4" />
           Configurações
-        </button> -->
+        </button>
 
         <!-- Aba de Ajuda -->
         <button
@@ -441,14 +443,26 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
       <!-- conteúdo configurações -->
       <div
         v-if="activeTab === 'settings'"
-        class="space-y-8 animate-in fade-in duration-500"
+        class="rounded-[32px] m-8 border border-dashed border-slate-200 bg-slate-50 p-10 text-center"
       >
-        <div class="p-10">
+        <div
+          class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-slate-200 text-slate-600"
+        >
+          <span class="text-2xl">🚧</span>
+        </div>
+        <h2 class="text-xl font-bold text-slate-800 mb-2">
+          Em desenvolvimento
+        </h2>
+        <p class="text-sm leading-6 text-slate-500 max-w-xl mx-auto">
+          A funcionalidade de clonagem de Forms Interno ainda está sendo
+          preparada. Em breve você poderá utilizar esse recurso para clonar
+          documentos entre servidores.
+        </p>
+
+        <!-- <div class="p-10">
           <div class="space-y-8 animate-in fade-in duration-500">
             <div class="shadow-slate-200/60">
-              <!-- formulario de clonagem -->
               <form @submit.prevent="cloneRequest" class="space-y-6">
-                <!-- header -->
                 <div
                   class="flex items-center gap-2 text-[#002D72] font-bold mb-4"
                 >
@@ -456,66 +470,14 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
                   <span>Configurações de Clonagem</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label
-                      class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
-                    >
-                      CONSUMER_KEY
-                    </label>
-                    <input
-                      required="true"
-                      v-model="solicitacaoId"
-                      type="text"
-                      placeholder="Ex: 2941"
-                      class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
-                    >
-                      CONSUMER_SECRET
-                    </label>
-                    <input
-                      required="true"
-                      v-model="solicitacaoId"
-                      type="text"
-                      placeholder="Ex: 2941"
-                      class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
-                    >
-                      ACCESS_TOKEN
-                    </label>
-                    <input
-                      required="true"
-                      v-model="solicitacaoId"
-                      type="text"
-                      placeholder="Ex: 2941"
-                      class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
-                    >
-                      TOKEN_SECRET
-                    </label>
-                    <input
-                      required="true"
-                      v-model="solicitacaoId"
-                      type="text"
-                      placeholder="Ex: 2941"
-                      class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
-                    />
-                  </div>
+                <div
+                  class="flex items-center gap-2 text-[#002D72] font-bold mb-4"
+                >
+                  <Checkbox
+                    v-model="isCaptureAttachments"
+                    class="w-4 h-4 text-slate-400"
+                  />
+                  <span>Capturar anexos</span>
                 </div>
 
                 <div class="w-full">
@@ -533,7 +495,6 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
                   />
                 </div>
 
-                <!-- botão para salvar os dados -->
                 <button
                   :disabled="isLoading"
                   type="submit"
@@ -545,7 +506,6 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
                 </button>
               </form>
 
-              <!-- Feedback -->
               <Toaster
                 richColors
                 :closeButton="true"
@@ -553,7 +513,7 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
               />
             </div>
           </div>
-        </div>
+        </div> -->
       </div>
 
       <!-- conteúdo ajuda -->
