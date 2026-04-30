@@ -12,12 +12,17 @@ const requirements = [
   "O endpoint do fluigHub <strong class='text-slate-800 font-bold'>'/datasearchauth'</strong> deve estar disponível no servidor de produção.",
 ];
 
+const comments = [
+  "Caso o usuario tenha marcado a opção de capturar anexos, o widget irá realizar o upload dos anexos no GED, na pasta -> Formulários Fluig/<processId>/<processInstance>/.",
+];
+
 const datasetFields = [
   { type: "string", name: "processInstanceId" },
   { type: "state", name: "targetState" },
   { type: "user", name: "targetAssignee" },
   { type: "data", name: "formFields" },
   { type: "id", name: "processId" },
+  { type: "data", name: "anexos" },
 ];
 
 const copyStatus = ref("Copiar");
@@ -100,6 +105,33 @@ async function copyEnvExample() {
           portanto, para utilizar o widget, você precisa ter as variáveis de
           ambiente definidas.
         </p>
+      </div>
+
+      <!-- alguns comentários -->
+      <div
+        class="w-full bg-white rounded-3xl border border-blue-100 p-8 shadow-sm h-full flex flex-col mb-8"
+      >
+        <div class="flex items-center gap-3 mb-8">
+          <div class="text-blue-900">
+            <Check class="w-4 h-4" />
+          </div>
+          <h2 class="text-xl font-bold text-slate-800">
+            Detalhes importantes para o uso do widget:
+          </h2>
+        </div>
+
+        <ul class="space-y-6">
+          <li v-for="(item, index) in comments" :key="index" class="flex gap-4">
+            <div
+              class="flex-shrink-0 w-8 h-8 bg-[#1e3a8a] text-white rounded-full flex items-center justify-center font-bold text-sm"
+            >
+              {{ index + 1 }}
+            </div>
+            <p class="text-slate-600 leading-relaxed text-sm">
+              <span v-html="item"></span>
+            </p>
+          </li>
+        </ul>
       </div>
 
       <!-- elemento de lista de requisitos -->

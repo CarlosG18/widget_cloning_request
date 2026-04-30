@@ -385,7 +385,7 @@ export async function UploadAnexo(
 
     return {
       success: true,
-      documentId: uploadResult.documentId,
+      documentId: JSON.parse(uploadResult.message).documentId,
       userInfo: {
         taskUserId: userInfo.taskUserId,
         attachedUser: userInfo.attachedUser,
