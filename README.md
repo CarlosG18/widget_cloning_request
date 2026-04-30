@@ -29,6 +29,7 @@ para funcionar corretamente:
 - O processo ao qual o usuário irá clonar deve estar disponível no servidor onde será iniciado o processo de clonagem e liberar a versão.
 - Tem que ter o serviço do fluig API cadastrado no servidor de origem e com o nome do serviço igual a **Fluig API**
 - O endpoint do fluigHub _'/datasearchauth'_ deve estar disponível no servidor de produção.
+- Criar uma pasta no GED com o nome ""
 
 O que faz o **dsGetParamsClone**?
 

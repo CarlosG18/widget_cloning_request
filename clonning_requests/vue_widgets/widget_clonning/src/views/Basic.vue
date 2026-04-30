@@ -30,7 +30,7 @@ const documentId = ref("");
 const urlSourceDocument = ref("");
 
 // variaveis de configuração
-// const isCaptureAttachments = ref<boolean>(true);
+const isCaptureAttachments = ref<boolean>(true);
 
 const activeTab = ref("solicitacao"); // Aba padrão
 
@@ -96,7 +96,7 @@ const cloneRequest = () => {
   if (!isURLValid.value) return;
 
   isLoading.value = true;
-  ClonningRequest(data)
+  ClonningRequest(data, isCaptureAttachments.value)
     .then((response) => {
       res.success = response.success;
       res.newId = response.newId;
@@ -287,6 +287,20 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
                     type="text"
                     placeholder="Ex: 2941"
                     class="w-full pl-5 pr-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm text-slate-600"
+                  />
+                </div>
+
+                <!-- campo de capturar anexos -->
+                <div class="w-full caputar-anexos">
+                  <label
+                    class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest"
+                  >
+                    <b>(Em desenvolvimento)</b> - Capturar anexos
+                  </label>
+                  <input
+                    v-model="isCaptureAttachments"
+                    type="checkbox"
+                    class="w-4 h-4 text-slate-400"
                   />
                 </div>
 
@@ -547,5 +561,12 @@ watch([solicitacaoId, documentId, isResSolicitacao], () => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* div do capturar anexos */
+.caputar-anexos {
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem;
 }
 </style>
