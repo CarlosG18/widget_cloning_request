@@ -1,4 +1,10 @@
 import type { Filter } from "../types/clonning";
+import type { UploadAnexoParams, AttachUserInfo } from "../types/clonning";
+import {
+  createPdfFileFromBase64,
+  ensurePdfFileName,
+} from "../utils/uploadImageUtils";
+
 import OAuth from "oauth-1.0a";
 import CryptoJS from "crypto-js";
 
@@ -268,46 +274,6 @@ export async function getdatasetAuth(
   }
 }
 
-type UploadAnexoParams = {
-  documentId: string | number;
-  fileName: string;
-  base64: string;
-};
-
-type AttachUserInfo = {
-  taskUserId: string;
-  attachedUser: string;
-};
-
-function normalizeBase64Content(base64: string): string {
-  return base64.replace(/^data:application\/pdf;base64,/, "").trim();
-}
-
-function ensurePdfFileName(fileName: string): string {
-  if (!fileName) {
-    return "anexo.pdf";
-  }
-
-  return fileName.toLowerCase().endsWith(".pdf") ? fileName : `${fileName}.pdf`;
-}
-
-function createPdfFileFromBase64(base64: string, fileName: string): File {
-  const normalizedBase64 = normalizeBase64Content(base64);
-  const byteCharacters = atob(normalizedBase64);
-  const byteNumbers = new Array(byteCharacters.length);
-
-  for (let i = 0; i < byteCharacters.length; i++) {
-    byteNumbers[i] = byteCharacters.charCodeAt(i);
-  }
-
-  const byteArray = new Uint8Array(byteNumbers);
-  const blob = new Blob([byteArray], { type: "application/pdf" });
-
-  return new File([blob], ensurePdfFileName(fileName), {
-    type: "application/pdf",
-  });
-}
-
 async function parseServiceResponse(response: Response) {
   const contentType = response.headers.get("content-type") || "";
 
@@ -368,6 +334,7 @@ export async function UploadAnexo(
   anexo: UploadAnexoParams,
   processInstanceId: string | number,
   baseUrl = window.location.origin,
+  monthFolder: string,
   type_credentials?: string,
 ) {
   try {
@@ -385,10 +352,11 @@ export async function UploadAnexo(
 
     const uploadFormData = new FormData();
     uploadFormData.append("file", pdfFile);
-    uploadFormData.append("fileName", normalizedFileName);
+    uploadFormData.append("pathId", monthFolder);
+    uploadFormData.append("nameFile", normalizedFileName);
 
     const uploadResponse = await fetch(
-      `${baseUrl}/fluighub/rest/service/execute/uploadanexo`,
+      `${baseUrl}/fluighub/rest/service/execute/uploadfile`,
       {
         method: "POST",
         body: uploadFormData,
@@ -410,67 +378,115 @@ export async function UploadAnexo(
       );
     }
 
-    const attachPayload = {
-      processId: null,
-      version: -1,
-      managerMode: false,
-      taskUserId: userInfo.taskUserId,
-      processInstanceId: Number(processInstanceId),
-      isDigitalSigned: false,
-      selectedState: null,
-      attachments: [
-        {
-          name: normalizedFileName,
-          newAttach: true,
-          description: normalizedFileName,
-          documentId: Number(anexo.documentId) || 0,
-          attachedUser: userInfo.attachedUser,
-          attachments: [
-            {
-              principal: true,
-              fileName: normalizedFileName,
-            },
-          ],
-        },
-      ],
-      currentMovto: null,
-    };
-
-    const attachResponse = await fetch(
-      `${baseUrl}/fluighub/rest/service/execute/attach`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(attachPayload),
-      },
-    );
-
-    const attachResult: any = await parseServiceResponse(attachResponse);
-
-    if (
-      !attachResponse.ok ||
-      (typeof attachResult?.code !== "undefined" && attachResult.code !== 200)
-    ) {
-      throw new Error(
-        extractErrorMessage(
-          attachResponse,
-          attachResult,
-          "Erro ao anexar documento ao processo",
-        ),
-      );
-    }
-
     return {
       success: true,
-      upload: uploadResult,
-      attach: attachResult,
+      documentId: uploadResult.documentId,
+      userInfo: {
+        taskUserId: userInfo.taskUserId,
+        attachedUser: userInfo.attachedUser,
+      },
       fileName: normalizedFileName,
-      processInstanceId: Number(processInstanceId),
     };
   } catch (err) {
     console.error("Erro ao realizar upload do anexo:", err);
+    throw err;
+  }
+}
+
+export async function attachDocument(
+  documentId: string | number,
+  processInstanceId: string | number,
+  userInfo: AttachUserInfo,
+  processId: string | number,
+  baseUrl = window.location.origin,
+) {
+  const normalizedFileName = ensurePdfFileName(userInfo.attachedUser);
+
+  const attachPayload = {
+    processId: processId,
+    version: -1,
+    managerMode: false,
+    taskUserId: userInfo.taskUserId,
+    processInstanceId: Number(processInstanceId),
+    isDigitalSigned: false,
+    selectedState: null,
+    attachments: [
+      {
+        name: normalizedFileName,
+        newAttach: true,
+        description: normalizedFileName,
+        documentId: documentId,
+        attachedUser: userInfo.attachedUser,
+        attachments: [
+          {
+            principal: true,
+            fileName: normalizedFileName,
+          },
+        ],
+      },
+    ],
+    currentMovto: null,
+  };
+
+  const attachResponse = await fetch(
+    `${baseUrl}/fluighub/rest/service/execute/attach`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(attachPayload),
+    },
+  );
+
+  const attachResult: any = await parseServiceResponse(attachResponse);
+
+  if (
+    !attachResponse.ok ||
+    (typeof attachResult?.code !== "undefined" && attachResult.code !== 200)
+  ) {
+    throw new Error(
+      extractErrorMessage(
+        attachResponse,
+        attachResult,
+        "Erro ao anexar documento ao processo",
+      ),
+    );
+  }
+
+  return {
+    success: true,
+    attach: attachResult,
+    fileName: normalizedFileName,
+    processInstanceId: Number(processInstanceId),
+  };
+}
+
+export async function createFolder(
+  folderName: string,
+  pathId: string | number,
+  baseUrl = window.location.origin,
+) {
+  const options = {
+    foldername: folderName,
+    pathId: pathId,
+  };
+
+  try {
+    const url = `${baseUrl}/fluighub/rest/service/execute/folder`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(options),
+    });
+    const res: any = await response.json();
+    if (res.code != 200) {
+      throw new Error("Erro ao criar pastas");
+    }
+
+    return res.message; // vai ser o id da pasta
+  } catch (err) {
+    console.error("Erro ao criar pastas:", err);
     throw err;
   }
 }

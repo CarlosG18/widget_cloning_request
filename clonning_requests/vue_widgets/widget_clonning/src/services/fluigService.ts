@@ -10,11 +10,16 @@ import {
   getdatasetAuth,
   getDataset,
   UploadAnexo,
+  createFolder,
+  attachDocument,
 } from "./utilsServices";
 
 import { transformarFields } from "../utils/formatFormFields";
 
-export async function ClonningRequest(data: ClonningData) {
+export async function ClonningRequest(
+  data: ClonningData,
+  isCaptureAttachments: boolean,
+) {
   const retorno: Response = {
     success: false,
     newId: "",
@@ -75,13 +80,46 @@ export async function ClonningRequest(data: ClonningData) {
       data.servidor,
     );
 
-    // anexar documentos no processo iniciado
-    const anexos = JSON.parse(resDataset[0].anexos);
-    console.log("Anexos:", anexos);
-    if (anexos && anexos.length > 0) {
-      for (const anexo of anexos) {
-        console.log("Dados do anexo:", anexo);
-        await UploadAnexo(anexo, Number(newId), urlbase, data.servidor);
+    if (isCaptureAttachments) {
+      // anexar documentos no processo iniciado
+      const anexos = JSON.parse(resDataset[0].anexos);
+
+      // criar pasta de anexos para a solicitação / processo
+      const monthFolder = await createFolder(
+        `${params.processID}/${newId}`,
+        2,
+        urlbase,
+      );
+
+      const anexosConfigs = [];
+
+      console.log("Anexos:", anexos);
+      if (anexos && anexos.length > 0) {
+        // fazer o upload dos anexos no GED
+        for (let i = 0; i < anexos.length; i++) {
+          const anexo = anexos[i];
+          console.log("Dados do anexo:", anexo.documentId);
+          const configsAnexo = await UploadAnexo(
+            anexo,
+            Number(newId),
+            urlbase,
+            monthFolder,
+            data.servidor,
+          );
+          anexosConfigs.push(configsAnexo);
+        }
+
+        // fazer o upload dos anexos no processo
+        for (let i = 0; i < anexosConfigs.length; i++) {
+          const configsAnexo = anexosConfigs[i];
+          await attachDocument(
+            configsAnexo.documentId,
+            Number(newId),
+            configsAnexo.userInfo,
+            params.processID,
+            urlbase,
+          );
+        }
       }
     }
 

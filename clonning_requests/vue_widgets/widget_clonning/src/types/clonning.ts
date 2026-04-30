@@ -32,3 +32,14 @@ export interface Response {
   date: string;
   error?: string;
 }
+
+export type UploadAnexoParams = {
+  documentId: string | number;
+  fileName: string;
+  base64: string;
+};
+
+export type AttachUserInfo = {
+  taskUserId: string;
+  attachedUser: string;
+};
