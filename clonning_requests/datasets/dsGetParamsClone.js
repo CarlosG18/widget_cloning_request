@@ -39,20 +39,20 @@ function createDataset(fields, constraints, sorts) {
       "processHistoryPK.processInstanceId",
       processInstanceId,
       processInstanceId,
-      ConstraintType.MUST
+      ConstraintType.MUST,
     );
     var c2 = DatasetFactory.createConstraint(
       "active",
       "true",
       "true",
-      ConstraintType.MUST
+      ConstraintType.MUST,
     );
 
     var dataset_processHistory = DatasetFactory.getDataset(
       "processHistory",
       null,
       [c1, c2],
-      null
+      null,
     );
 
     if (
@@ -66,14 +66,14 @@ function createDataset(fields, constraints, sorts) {
       "choosedSequence",
       targetState,
       targetState,
-      ConstraintType.MUST
+      ConstraintType.MUST,
     );
 
     var c4 = DatasetFactory.createConstraint(
       "processTaskPK.processInstanceId",
       processInstanceId,
       processInstanceId,
-      ConstraintType.MUST
+      ConstraintType.MUST,
     );
 
     var constraint = new Array(c3, c4);
@@ -82,13 +82,13 @@ function createDataset(fields, constraints, sorts) {
       "processTask",
       null,
       constraint,
-      null
+      null,
     );
 
     if (dataset_processTask != null && dataset_processTask.getRowsCount() > 0) {
       targetAssignee = dataset_processTask.getValue(
         0,
-        "processTaskPK.colleagueId"
+        "processTaskPK.colleagueId",
       );
     }
 
@@ -97,16 +97,14 @@ function createDataset(fields, constraints, sorts) {
       "processInstanceId",
       processInstanceId,
       processInstanceId,
-      ConstraintType.MUST
+      ConstraintType.MUST,
     );
     var anexos = DatasetFactory.getDataset(
       "dsGetAxenosFromSolicitacao",
       null,
       [c_anexos],
-      null
+      null,
     );
-
-    log.info("Número de anexos: " + anexos.getRowsCount());
 
     // Convertendo Dataset de anexos para array de objetos de string
     var anexosArray = [];
@@ -119,14 +117,12 @@ function createDataset(fields, constraints, sorts) {
         var anexoObj = {
           documentId: documentId + "",
           fileName: fileName + "",
-          base64: base64 + ""
+          base64: base64 + "",
         };
 
         anexosArray.push(anexoObj);
       }
     }
-
-    log.info("anexosArray ->>>>>" + JSON.stringify(anexosArray));
 
     dataset.addRow([
       processInstanceId,
@@ -134,7 +130,7 @@ function createDataset(fields, constraints, sorts) {
       targetAssignee,
       formFieldsStr,
       processID,
-      JSON.stringify(anexosArray || [])
+      JSON.stringify(anexosArray || []),
     ]);
 
     return dataset;
@@ -160,7 +156,7 @@ function getFormsFields(processInstanceId) {
     timeoutService: "100",
     headers: {
       "Content-Type": "application/json",
-    }
+    },
   };
 
   try {
